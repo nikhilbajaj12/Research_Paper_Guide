@@ -1,0 +1,18 @@
+[
+  {
+    "id": "neurips-2025",
+    "abbr": "NeurIPS 2025",
+    "name": "Conference on Neural Information Processing Systems",
+    "start_date": "2025-12-02",
+    "end_date": "2025-12-07",
+    "submission_deadline": "2025-09-30",
+    "notification_date": "2025-11-01",
+    "location": "San Diego, California, USA",
+    "flag": "🇺🇸",
+    "conference_type": "academic",
+    "topics": ["Deep Learning", "Neural Networks", "Generative Models", "AI Theory", "Robotics"],
+    "description": "One of the most prestigious AI/ML conferences in the world.",
+    "url": "https://neurips.cc/",
+    "acceptance_rate": null
+  }
+]

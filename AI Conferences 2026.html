@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Conferences 2025–2026 | Global Tracker</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --card2: #f1f5f9;
+      --accent: #4f46e5;
+      --accent2: #7c3aed;
+      --green: #059669;
+      --yellow: #d97706;
+      --red: #dc2626;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --header-bg: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Notification Popup ── */
+    #notif-popup {
+      display: none;
+      position: fixed;
+      top: 20px; right: 20px;
+      z-index: 9999;
+      width: 340px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(79,70,229,0.18), 0 2px 8px rgba(0,0,0,0.08);
+      border: 1px solid #c7d2fe;
+      overflow: hidden;
+      animation: slideIn 0.4s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes slideIn {
+      from { transform: translateX(110%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    #notif-popup .notif-header {
+      background: linear-gradient(90deg, #4f46e5, #7c3aed);
+      color: #fff;
+      padding: 14px 18px 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    #notif-popup .notif-body {
+      padding: 14px 18px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .notif-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-item strong { display: block; color: var(--text); margin-bottom: 2px; }
+    .notif-item span { color: var(--muted); }
+    .notif-close {
+      display: block;
+      width: calc(100% - 36px);
+      margin: 0 18px 14px;
+      padding: 8px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .notif-close:hover { background: #4338ca; }
+
+    /* ── Header ── */
+    header {
+      background: var(--header-bg);
+      border-bottom: 1px solid #3730a3;
+      padding: 32px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: 50%; transform: translateX(-50%);
+      width: 500px; height: 200px;
+      background: radial-gradient(ellipse, rgba(165,180,252,0.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    header h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, #a5b4fc, #e879f9, #67e8f9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      margin-top: 8px;
+      color: #c7d2fe;
+      font-size: 1rem;
+    }
+    .live-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #34d399;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,0.5); }
+      50%      { opacity: 0.8; box-shadow: 0 0 0 6px rgba(52,211,153,0); }
+    }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      padding: 20px 24px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 1.8rem; font-weight: 800; color: var(--accent); }
+    .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 20px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 220px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 16px 10px 40px;
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-box input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    }
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 12px; top: 50%; transform: translateY(-50%);
+      font-size: 0.85rem;
+    }
+    .filter-btn {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+    select {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      color: var(--text);
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus { border-color: var(--accent); }
+
+    /* ── Section divider ── */
+    .section-divider {
+      max-width: 1400px;
+      margin: 8px auto 0;
+      padding: 12px 24px 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-divider span {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .divider-upcoming span { background: #ede9fe; color: #4f46e5; }
+    .divider-past span    { background: #f1f5f9; color: #94a3b8; }
+    .section-divider hr   { flex: 1; border: none; border-top: 1.5px solid var(--border); }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 18px;
+      padding: 4px 24px 16px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 32px rgba(79,70,229,0.12);
+      border-color: var(--accent);
+    }
+    .card.past-card {
+      opacity: 0.72;
+      background: #f8fafc;
+    }
+    .card.past-card:hover { opacity: 1; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 3px;
+    }
+    .card.academic::before { background: linear-gradient(90deg, #4f46e5, #7c3aed); }
+    .card.industry::before { background: linear-gradient(90deg, #059669, #10b981); }
+    .card.nlp::before      { background: linear-gradient(90deg, #d97706, #f59e0b); }
+    .card.vision::before   { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+    .card.data::before     { background: linear-gradient(90deg, #dc2626, #f43f5e); }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .card-abbr {
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .badge {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .badge-upcoming { background: #ede9fe; color: #4f46e5; border: 1px solid #c4b5fd; }
+    .badge-soon     { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-live     { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-past     { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
+
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 0.83rem;
+      color: var(--muted);
+    }
+
+    .topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    .topic-tag {
+      background: #ede9fe;
+      border: 1px solid #c4b5fd;
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 0.71rem;
+      color: #4338ca;
+      font-weight: 500;
+    }
+    .card.industry .topic-tag  { background:#d1fae5; border-color:#6ee7b7; color:#065f46; }
+    .card.nlp .topic-tag       { background:#fef3c7; border-color:#fde68a; color:#92400e; }
+    .card.vision .topic-tag    { background:#e0f2fe; border-color:#bae6fd; color:#075985; }
+    .card.data .topic-tag      { background:#ffe4e6; border-color:#fecdd3; color:#9f1239; }
+
+    .countdown {
+      margin-top: 14px;
+      padding: 10px 14px;
+      background: var(--card2);
+      border-radius: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--border);
+    }
+    .countdown-label { font-size: 0.75rem; color: var(--muted); }
+    .countdown-val   { font-size: 1.1rem; font-weight: 800; }
+    .countdown-val.green  { color: var(--green); }
+    .countdown-val.yellow { color: var(--yellow); }
+    .countdown-val.red    { color: var(--red); }
+    .countdown-val.muted  { color: #94a3b8; }
+
+    .card-footer {
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .type-badge {
+      font-size: 0.68rem;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .academic-badge { background: #ede9fe; color: #4338ca; }
+    .industry-badge { background: #d1fae5; color: #065f46; }
+    .nlp-badge      { background: #fef3c7; color: #92400e; }
+    .vision-badge   { background: #e0f2fe; color: #075985; }
+    .data-badge     { background: #ffe4e6; color: #9f1239; }
+
+    .link-btn {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+    .link-btn:hover { opacity: 1; }
+
+    /* ── No results ── */
+    .no-results {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+      display: none;
+    }
+    .no-results.show { display: block; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+      margin-top: 20px;
+    }
+    footer a { color: var(--accent); }
+
+    /* ── Notif permission banner ── */
+    #notif-banner {
+      display: none;
+      background: #ede9fe;
+      border-bottom: 1px solid #c4b5fd;
+      padding: 10px 24px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #4338ca;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    #notif-banner.show { display: flex; }
+    #notif-banner button {
+      background: #4f46e5; color: white;
+      border: none; border-radius: 6px;
+      padding: 5px 14px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+    }
+    #notif-banner .dismiss { background: transparent; color: var(--muted); border: 1px solid #c4b5fd; }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.6rem; }
+      .grid { grid-template-columns: 1fr; padding: 0 12px 32px; }
+      .controls { padding: 12px; }
+      .stats { gap: 20px; }
+      #notif-popup { width: calc(100vw - 32px); right: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Notification Permission Banner -->
+<div id="notif-banner">
+  🔔 Enable notifications to get reminded 2 days before each conference starts
+  <button onclick="requestNotifPermission()">Enable</button>
+  <button class="dismiss" onclick="document.getElementById('notif-banner').classList.remove('show')">Dismiss</button>
+</div>
+
+<!-- Notification Popup -->
+<div id="notif-popup">
+  <div class="notif-header">🔔 Conference Starting in 2 Days!</div>
+  <div class="notif-body" id="notif-body"></div>
+  <button class="notif-close" onclick="closeNotifPopup()">Got it!</button>
+</div>
+
+<header>
+  <h1>🤖 AI Conferences 2025–2026</h1>
+  <p><span class="live-dot"></span>Global Tracker — Research, Industry & Innovation Events</p>
+</header>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-num" id="totalCount">0</div>
+    <div class="stat-label">Total Events</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="upcomingCount" style="color:#059669">0</div>
+    <div class="stat-label">Upcoming</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="countryCount" style="color:#d97706">0</div>
+    <div class="stat-label">Countries</div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="soonCount" style="color:#dc2626">0</div>
+    <div class="stat-label">In Next 60 Days</div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search by name, topic, location..." oninput="renderCards()" />
+  </div>
+  <button class="filter-btn active" data-filter="all"      onclick="setFilter('all',this)">All</button>
+  <button class="filter-btn" data-filter="academic"        onclick="setFilter('academic',this)">Academic</button>
+  <button class="filter-btn" data-filter="industry"        onclick="setFilter('industry',this)">Industry</button>
+  <button class="filter-btn" data-filter="nlp"             onclick="setFilter('nlp',this)">NLP / LLM</button>
+  <button class="filter-btn" data-filter="vision"          onclick="setFilter('vision',this)">Computer Vision</button>
+  <button class="filter-btn" data-filter="data"            onclick="setFilter('data',this)">Data & MLOps</button>
+  <select id="sortSelect" onchange="renderCards()">
+    <option value="date">Sort by Date</option>
+    <option value="name">Sort by Name</option>
+  </select>
+</div>
+
+<div id="upcoming-section"></div>
+<div id="past-section"></div>
+<div class="no-results" id="noResults">No conferences match your search. Try different keywords.</div>
+
+<footer>
+  Data sourced from
+  <a href="https://almcorp.com/blog/ai-conferences-2026-complete-guide/">ALM Corp</a>,
+  <a href="https://www.splunk.com/en_us/blog/learn/ai-artificial-intelligence-conferences-events.html">Splunk</a>,
+  <a href="https://www.unite.ai/conferences/">Unite.AI</a> &
+  <a href="https://www.datacamp.com/blog/top-ai-conferences">DataCamp</a>.
+  Last updated: April 2026.
+</footer>
+
+<script>
+const conferences = [
+  // ────────── 2025 PAST ──────────
+  {
+    abbr: "NAACL 2025",
+    name: "North American Chapter of ACL",
+    start: "2025-04-29", end: "2025-05-04",
+    location: "Albuquerque, New Mexico, USA", flag: "🇺🇸",
+    type: "nlp",
+    topics: ["NLP", "Computational Linguistics", "LLMs", "Summarization"],
+    url: "https://2025.naacl.org/",
+    desc: "Premier NLP conference organized by ACL in North America."
+  },
+  {
+    abbr: "CVPR 2025",
+    name: "Computer Vision and Pattern Recognition",
+    start: "2025-06-11", end: "2025-06-15",
+    location: "Nashville, Tennessee, USA", flag: "🇺🇸",
+    type: "vision",
+    topics: ["Computer Vision", "Deep Learning", "Image Recognition", "Generative AI"],
+    url: "https://cvpr.thecvf.com/",
+    desc: "Flagship conference on computer vision hosted by IEEE/CVF."
+  },
+  {
+    abbr: "ICML 2025",
+    name: "International Conference on Machine Learning",
+    start: "2025-07-13", end: "2025-07-19",
+    location: "Vancouver, Canada", flag: "🇨🇦",
+    type: "academic",
+    topics: ["Machine Learning", "Reinforcement Learning", "Optimization", "Theory"],
+    url: "https://icml.cc/",
+    desc: "Premier venue for research on machine learning and its applications."
+  },
+  {
+    abbr: "ACL 2025",
+    name: "Association for Computational Linguistics Annual Meeting",
+    start: "2025-07-27", end: "2025-08-01",
+    location: "Vienna, Austria", flag: "🇦🇹",
+    type: "nlp",
+    topics: ["NLP", "Large Language Models", "Dialogue Systems", "Machine Translation"],
+    url: "https://2025.aclweb.org/",
+    desc: "Top-tier venue for NLP and computational linguistics research."
+  },
+  {
+    abbr: "KDD 2025",
+    name: "ACM SIGKDD Conference on Knowledge Discovery & Data Mining",
+    start: "2025-08-03", end: "2025-08-07",
+    location: "Toronto, Canada", flag: "🇨🇦",
+    type: "data",
+    topics: ["Data Mining", "Knowledge Discovery", "Graph ML", "Time Series", "MLOps"],
+    url: "https://kdd2025.kdd.org/",
+    desc: "Premier international forum on data science and data mining research."
+  },
+  {
+    abbr: "Ai4 2025",
+    name: "Ai4 Enterprise AI Summit",
+    start: "2025-08-11", end: "2025-08-13",
+    location: "Las Vegas, Nevada, USA", flag: "🇺🇸",
+    type: "industry",
+    topics: ["Enterprise AI", "AI Strategy", "Automation", "Governance"],
+    url: "https://ai4.io/",
+    desc: "Leading enterprise AI event featuring C-suite leaders and tech innovators."
+  },
+  {
+    abbr: "IJCAI 2025",
+    name: "International Joint Conference on Artificial Intelligence",
+    start: "2025-08-16", end: "2025-08-22",
+    location: "Montreal, Canada", flag: "🇨🇦",
+    type: "academic",
+    topics: ["AI Reasoning", "Multi-Agent Systems", "Planning", "Knowledge Representation"],
+    url: "https://2025.ijcai.org/",
+    desc: "One of the oldest and most prestigious AI research conferences."
+  },
+  {
+    abbr: "INTERSPEECH 2025",
+    name: "INTERSPEECH Conference on Speech Processing",
+    start: "2025-08-17", end: "2025-08-21",
+    location: "Rotterdam, Netherlands", flag: "🇳🇱",
+    type: "nlp",
+    topics: ["Speech Recognition", "TTS", "Voice AI", "Audio LLMs", "Multilingual Speech"],
+    url: "https://www.interspeech2025.org/",
+    desc: "World's largest and most comprehensive conference on the science and technology of spoken language."
+  },
+  {
+    abbr: "The AI Conference 2025",
+    name: "The AI Conference — San Francisco",
+    start: "2025-09-17", end: "2025-09-18",
+    location: "San Francisco, California, USA", flag: "🇺🇸",
+    type: "industry",
+    topics: ["AI Products", "Builders", "Research", "LLMs", "AI Safety"],
+    url: "https://aiconference.com/",
+    desc: "5,500+ builders, researchers & leaders converge in SF."
+  },
+  {
+    abbr: "RecSys 2025",
+    name: "ACM Conference on Recommender Systems",
+    start: "2025-09-22", end: "2025-09-26",
+    location: "Prague, Czech Republic", flag: "🇨🇿",
+    type: "data",
+    topics: ["Recommendation Systems", "Collaborative Filtering", "LLMs for RecSys", "Personalization"],
+    url: "https://recsys.acm.org/recsys25/",
+    desc: "The leading international conference on the research and practice of recommender systems."
+  },
+  {
+    abbr: "World Summit AI 2025",
+    name: "World Summit AI",
+    start: "2025-10-08", end: "2025-10-09",
+    location: "Amsterdam, Netherlands", flag: "🇳🇱",
+    type: "industry",
+    topics: ["AI Policy", "AGI", "Responsible AI", "Business AI", "Innovation"],
+    url: "https://worldsummit.ai/",
+    desc: "Global summit connecting AI leaders, policymakers, and innovators."
+  },
+  {
+    abbr: "ICCV 2025",
+    name: "International Conference on Computer Vision",
+    start: "2025-10-19", end: "2025-10-23",
+    location: "Honolulu, Hawaii, USA", flag: "🇺🇸",
+    type: "vision",
+    topics: ["Computer Vision", "Object Detection", "3D Vision", "Robotics Vision"],
+    url: "https://iccv.thecvf.com/",
+    desc: "Top biennial computer vision conference by IEEE."
+  },
+  {
+    abbr: "EMNLP 2025",
+    name: "Empirical Methods in Natural Language Processing",
+    start: "2025-11-05", end: "2025-11-09",
+    location: "Miami Beach, Florida, USA", flag: "🇺🇸",
+    type: "nlp",
+    topics: ["NLP", "Empirical Methods", "LLMs", "Information Extraction", "Text Generation"],
+    url: "https://2025.emnlp.org/",
+    desc: "One of the most selective and influential NLP conferences by ACL."
+  },
+  {
+    abbr: "NeurIPS 2025",
+    name: "Conference on Neural Information Processing Systems",
+    start: "2025-12-02", end: "2025-12-07",
+    location: "San Diego, California, USA", flag: "🇺🇸",
+    type: "academic",
+    topics: ["Deep Learning", "Neural Networks", "Generative Models", "AI Theory", "Robotics"],
+    url: "https://neurips.cc/",
+    desc: "One of the most prestigious AI/ML conferences in the world."
+  },
+
+  // ────────── 2026 UPCOMING ──────────
+  {
+    abbr: "AAAI 2026",
+    name: "AAAI Conference on Artificial Intelligence",
+    start: "2026-01-20", end: "2026-01-27",
+    location: "Singapore EXPO, Singapore", flag: "🇸🇬",
+    type: "academic",
+    topics: ["AI Research", "Knowledge Graphs", "Planning", "NLP", "Robotics"],
+    url: "https://aaai.org/conference/aaai/aaai-26/",
+    desc: "40th edition of the flagship AAAI conference on artificial intelligence."
+  },
+  {
+    abbr: "WACV 2026",
+    name: "IEEE/CVF Winter Conference on Applications of Computer Vision",
+    start: "2026-02-23", end: "2026-02-27",
+    location: "Tucson, Arizona, USA", flag: "🇺🇸",
+    type: "vision",
+    topics: ["Applied Computer Vision", "Video Analysis", "Medical Imaging", "Autonomous Vehicles"],
+    url: "https://wacv2026.thecvf.com/",
+    desc: "IEEE/CVF conference focused on practical applications of computer vision."
+  },
+  {
+    abbr: "COLING 2026",
+    name: "International Conference on Computational Linguistics",
+    start: "2026-03-08", end: "2026-03-13",
+    location: "Abu Dhabi, UAE", flag: "🇦🇪",
+    type: "nlp",
+    topics: ["Computational Linguistics", "NLP", "Morphology", "Syntax", "Cross-lingual NLP"],
+    url: "https://coling2026.org/",
+    desc: "One of the oldest and most prestigious computational linguistics conferences."
+  },
+  {
+    abbr: "ICLR 2026",
+    name: "International Conference on Learning Representations",
+    start: "2026-04-23", end: "2026-04-27",
+    location: "Rio de Janeiro, Brazil", flag: "🇧🇷",
+    type: "academic",
+    topics: ["Deep Learning", "Representation Learning", "Transformers", "Self-supervised Learning"],
+    url: "https://iclr.cc/",
+    desc: "Premier conference dedicated to representation learning and deep learning."
+  },
+  {
+    abbr: "CVPR 2026",
+    name: "Computer Vision and Pattern Recognition",
+    start: "2026-06-03", end: "2026-06-07",
+    location: "Denver Convention Center, Denver, CO, USA", flag: "🇺🇸",
+    type: "vision",
+    topics: ["Computer Vision", "Pattern Recognition", "Video Understanding", "Diffusion Models"],
+    url: "https://cvpr.thecvf.com/",
+    desc: "IEEE/CVF flagship annual vision conference."
+  },
+  {
+    abbr: "Data + AI Summit 2026",
+    name: "Databricks Data + AI Summit",
+    start: "2026-06-15", end: "2026-06-18",
+    location: "San Francisco, CA, USA (Hybrid)", flag: "🇺🇸",
+    type: "data",
+    topics: ["Data Engineering", "MLOps", "LLMs on Data", "Apache Spark", "Lakehouse"],
+    url: "https://www.databricks.com/dataaisummit/",
+    desc: "Largest data + AI conference by Databricks with hybrid attendance."
+  },
+  {
+    abbr: "ICML 2026",
+    name: "International Conference on Machine Learning",
+    start: "2026-07-06", end: "2026-07-11",
+    location: "COEX Convention Center, Seoul, South Korea", flag: "🇰🇷",
+    type: "academic",
+    topics: ["Machine Learning", "Optimization", "Generalization", "Fairness", "RL"],
+    url: "https://icml.cc/",
+    desc: "Premier ML research conference held in Seoul for 2026."
+  },
+  {
+    abbr: "Ai4 2026",
+    name: "Ai4 Enterprise AI Summit",
+    start: "2026-08-04", end: "2026-08-06",
+    location: "The Venetian, Las Vegas, Nevada, USA", flag: "🇺🇸",
+    type: "industry",
+    topics: ["Enterprise AI", "ROI from AI", "AI Governance", "Agents", "Automation"],
+    url: "https://ai4.io/",
+    desc: "Top executive AI event with 5,000+ enterprise leaders."
+  },
+  {
+    abbr: "ECCV 2026",
+    name: "European Conference on Computer Vision",
+    start: "2026-09-07", end: "2026-09-11",
+    location: "Paris, France", flag: "🇫🇷",
+    type: "vision",
+    topics: ["Computer Vision", "Scene Understanding", "Action Recognition", "3D Reconstruction"],
+    url: "https://eccv2026.eu/",
+    desc: "Premier biennial European computer vision conference."
+  },
+  {
+    abbr: "The AI Conference 2026",
+    name: "The AI Conference — San Francisco",
+    start: "2026-09-29", end: "2026-10-01",
+    location: "Pier 48, San Francisco, USA", flag: "🇺🇸",
+    type: "industry",
+    topics: ["AI Research", "AI Products", "Safety", "Agents", "Multimodal AI"],
+    url: "https://aiconference.com/",
+    desc: "2026 edition at Pier 48 SF with world-class AI researchers and builders."
+  },
+  {
+    abbr: "NeurIPS 2026",
+    name: "Conference on Neural Information Processing Systems",
+    start: "2026-12-01", end: "2026-12-06",
+    location: "Vancouver, Canada", flag: "🇨🇦",
+    type: "academic",
+    topics: ["Deep Learning", "Neural Networks", "Foundation Models", "AI Theory", "Robotics"],
+    url: "https://neurips.cc/",
+    desc: "The world's premier machine learning and computational neuroscience conference."
+  },
+];
+
+let currentFilter = "all";
+const today = new Date(); today.setHours(0,0,0,0);
+
+function daysUntil(dateStr) {
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.round((d - today) / 86400000);
+}
+function isPast(c)     { return daysUntil(c.end) < 0; }
+function isLive(c)     { return daysUntil(c.start) <= 0 && daysUntil(c.end) >= 0; }
+function isUpcoming(c) { return daysUntil(c.start) > 0; }
+
+function statusBadge(c) {
+  if (isPast(c))     return { label: "Past",         cls: "badge-past" };
+  if (isLive(c))     return { label: "🟢 Live Now",  cls: "badge-live" };
+  const d = daysUntil(c.start);
+  if (d <= 60)       return { label: `In ${d} days`, cls: "badge-soon" };
+  return               { label: "Upcoming",           cls: "badge-upcoming" };
+}
+
+function countdownDisplay(c) {
+  if (isPast(c))     return { text: "Ended",    cls: "muted" };
+  if (isLive(c))     return { text: "LIVE",     cls: "red" };
+  const d = daysUntil(c.start);
+  if (d <= 30)       return { text: `${d}d`,    cls: "red" };
+  if (d <= 90)       return { text: `${d}d`,    cls: "yellow" };
+  return               { text: `${d}d`,          cls: "green" };
+}
+
+function formatDate(s, e) {
+  const sd = new Date(s), ed = new Date(e);
+  const o  = { month: 'short', day: 'numeric' };
+  const oy = { month: 'short', day: 'numeric', year: 'numeric' };
+  if (sd.getMonth() === ed.getMonth())
+    return `${sd.toLocaleDateString('en-US', o)}–${ed.getDate()}, ${ed.getFullYear()}`;
+  return `${sd.toLocaleDateString('en-US', o)} – ${ed.toLocaleDateString('en-US', oy)}`;
+}
+
+function typeLabel(t) {
+  return { academic:"Academic", industry:"Industry", nlp:"NLP / LLM", vision:"Vision", data:"Data & MLOps" }[t] || t;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+
+function cardHTML(c) {
+  const sb  = statusBadge(c);
+  const cd  = countdownDisplay(c);
+  const past = isPast(c);
+  return `
+  <div class="card ${c.type}${past ? ' past-card' : ''}" onclick="window.open('${c.url}','_blank')">
+    <div class="card-header">
+      <div>
+        <div class="card-abbr">${c.abbr}</div>
+        <div class="card-title">${c.name}</div>
+      </div>
+      <span class="badge ${sb.cls}">${sb.label}</span>
+    </div>
+    <div class="info-row">📅 ${formatDate(c.start, c.end)}</div>
+    <div class="info-row">📍 ${c.flag} ${c.location}</div>
+    <div class="info-row" style="font-size:0.79rem;color:#94a3b8;">${c.desc}</div>
+    <div class="topics">${c.topics.map(t=>`<span class="topic-tag">${t}</span>`).join('')}</div>
+    <div class="countdown">
+      <span class="countdown-label">⏳ ${past ? 'Status' : 'Starts in'}</span>
+      <span class="countdown-val ${cd.cls}">${cd.text}</span>
+    </div>
+    <div class="card-footer">
+      <span class="type-badge ${c.type}-badge">${typeLabel(c.type)}</span>
+      <a class="link-btn" href="${c.url}" target="_blank" onclick="event.stopPropagation()">Website ↗</a>
+    </div>
+  </div>`;
+}
+
+function gridHTML(list) {
+  return `<div class="grid">${list.map(cardHTML).join('')}</div>`;
+}
+
+function renderCards() {
+  const q    = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+
+  let filtered = conferences.filter(c => {
+    const mf = currentFilter === 'all' || c.type === currentFilter;
+    const ms = !q || [c.abbr, c.name, c.location, ...c.topics, c.desc].join(' ').toLowerCase().includes(q);
+    return mf && ms;
+  });
+
+  // Split: upcoming/live first, past last
+  let upcoming = filtered.filter(c => !isPast(c));
+  let past     = filtered.filter(c =>  isPast(c));
+
+  if (sort === 'date') {
+    upcoming.sort((a,b) => new Date(a.start) - new Date(b.start));
+    past.sort((a,b)     => new Date(b.start) - new Date(a.start)); // most recent past first
+  } else {
+    upcoming.sort((a,b) => a.abbr.localeCompare(b.abbr));
+    past.sort((a,b)     => a.abbr.localeCompare(b.abbr));
+  }
+
+  const upSec  = document.getElementById('upcoming-section');
+  const pastSec= document.getElementById('past-section');
+  const noRes  = document.getElementById('noResults');
+
+  if (filtered.length === 0) {
+    upSec.innerHTML = ''; pastSec.innerHTML = '';
+    noRes.classList.add('show'); return;
+  }
+  noRes.classList.remove('show');
+
+  upSec.innerHTML = upcoming.length > 0
+    ? `<div class="section-divider divider-upcoming"><span>🚀 Upcoming & Live (${upcoming.length})</span><hr></div>${gridHTML(upcoming)}`
+    : '';
+
+  pastSec.innerHTML = past.length > 0
+    ? `<div class="section-divider divider-past"><span>✅ Past Events (${past.length})</span><hr></div>${gridHTML(past)}`
+    : '';
+
+  // Update stats
+  const up    = conferences.filter(c => !isPast(c));
+  const soon  = conferences.filter(c => { const d = daysUntil(c.start); return d > 0 && d <= 60; });
+  const ctry  = new Set(conferences.map(c => c.flag)).size;
+  document.getElementById('totalCount').textContent    = conferences.length;
+  document.getElementById('upcomingCount').textContent = up.length;
+  document.getElementById('countryCount').textContent  = ctry;
+  document.getElementById('soonCount').textContent     = soon.length;
+}
+
+// ── Notification Logic ──
+function check2DayAlerts() {
+  const alerts = conferences.filter(c => {
+    const d = daysUntil(c.start);
+    return d === 2 || d === 1 || d === 0;
+  });
+
+  if (alerts.length === 0) return;
+
+  // Browser Notification API
+  if (Notification.permission === 'granted') {
+    alerts.forEach(c => {
+      const d = daysUntil(c.start);
+      const msg = d === 0 ? 'Starting TODAY!' : d === 1 ? 'Starting TOMORROW!' : 'Starting in 2 days!';
+      new Notification(`📅 ${c.abbr} — ${msg}`, {
+        body: `📍 ${c.location}\n${formatDate(c.start, c.end)}`,
+        icon: 'https://em-content.zobj.net/source/google/386/robot_1f916.png'
+      });
+    });
+  }
+
+  // In-page popup
+  const body = document.getElementById('notif-body');
+  body.innerHTML = alerts.map(c => {
+    const d = daysUntil(c.start);
+    const label = d === 0 ? '🔴 Starting TODAY' : d === 1 ? '🟠 Starts TOMORROW' : '🟡 Starts in 2 days';
+    return `<div class="notif-item">
+      <strong>${c.abbr}</strong>
+      <span>${label} · ${c.flag} ${c.location}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('notif-popup').style.display = 'block';
+}
+
+function closeNotifPopup() {
+  document.getElementById('notif-popup').style.display = 'none';
+}
+
+function requestNotifPermission() {
+  Notification.requestPermission().then(p => {
+    document.getElementById('notif-banner').classList.remove('show');
+    if (p === 'granted') check2DayAlerts();
+  });
+}
+
+// On load
+window.addEventListener('load', () => {
+  renderCards();
+  check2DayAlerts(); // show popup if any conference in 2 days
+
+  // Show banner only if permission not decided yet
+  if (Notification.permission === 'default') {
+    document.getElementById('notif-banner').classList.add('show');
+  }
+});
+</script>
+</body>
+</html>

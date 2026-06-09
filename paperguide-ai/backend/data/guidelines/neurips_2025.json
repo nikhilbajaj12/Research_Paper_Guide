@@ -1,0 +1,27 @@
+{
+  "conference_id": "neurips-2025",
+  "max_pages": 9,
+  "min_pages": null,
+  "requires_anonymity": true,
+  "reference_format": "bibtex",
+  "margin_top_cm": 2.54,
+  "margin_bottom_cm": 2.54,
+  "margin_left_cm": 2.54,
+  "margin_right_cm": 2.54,
+  "required_sections": [
+    "abstract",
+    "introduction",
+    "method",
+    "experiments",
+    "related work",
+    "references"
+  ],
+  "forbidden_topics": [],
+  "special_rules": [
+    "References and appendices do not count towards page limit",
+    "Author names and affiliations must be removed for anonymity",
+    "Supplementary material must be submitted separately",
+    "Figure and table captions should be descriptive and numbered"
+  ],
+  "notes": "TODO: Verify with official NeurIPS 2025 submission guidelines at https://neurips.cc/"
+}

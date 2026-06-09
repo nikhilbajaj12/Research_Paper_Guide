@@ -1,0 +1,112 @@
+You are a senior full-stack architect and Python/FastAPI engineer.
+
+We are going to build a new production-grade POC from scratch called PaperGuide AI.
+
+PaperGuide AI is a conference-aware research paper submission assistant. It helps users select a target conference such as NeurIPS, upload a research paper, analyze the paper against conference submission guidelines, detect compliance issues, and generate an Overleaf-ready LaTeX ZIP package.
+
+Important reference asset:
+There is an AI Conferences 2026.html file available in this workspace.
+Use this HTML file only as a reference for:
+1. Conference metadata structure
+2. Conference card UI inspiration
+3. Search and filter behavior
+4. Sort by date/name behavior
+5. Upcoming and past conference grouping
+6. Countdown/deadline logic
+7. Future notification/reminder logic
+8. Conference categories such as academic, industry, NLP, vision, and data
+
+Do not directly copy the HTML code into the new project yet.
+Only understand how it can guide the Conference Discovery module of PaperGuide AI.
+
+Before creating code, first create only the planning and skeleton proposal.
+
+Project flow:
+User selects conference
+→ System loads conference guidelines
+→ User uploads paper
+→ System parses paper
+→ System runs compliance checks
+→ System generates compliance report
+→ User reviews issues
+→ System generates Overleaf-ready ZIP
+→ User uploads ZIP to Overleaf and generates final PDF
+
+MVP scope:
+Start with NeurIPS only.
+Later extend to CVPR, ICML, ACL, EMNLP, AAAI, ICLR, and other conferences.
+
+Important design rules:
+1. Use FastAPI for backend.
+2. Use Pydantic for all schemas, request models, response models, and internal validation models.
+3. Follow Python best practices.
+4. Keep routes thin.
+5. Keep business logic inside services.
+6. Keep deterministic validation inside checkers.
+7. Keep AI-assisted logic inside agents.
+8. Keep file parsing inside parsers.
+9. Keep ZIP, LaTeX, and report creation inside generators.
+10. Keep constants, settings, and logging inside core.
+11. Keep reusable helper functions inside utils.
+12. Keep rule-based compliance separate from AI-assisted review.
+13. Do not fabricate conference rules, references, citations, results, metrics, or paper content.
+14. If a value is unknown, mark it as TODO or needs verification.
+15. Do not over-engineer.
+16. Do not create files yet.
+17. Do not write implementation code yet.
+18. First explain the full project plan and proposed skeleton clearly.
+
+Expected agents/checkers:
+- Guideline Agent
+- Paper Parsing Agent
+- Anonymity Checker
+- Page Limit Checker
+- Reference and Citation Checker
+- Template Checker
+- Checklist Checker
+- Claims Integrity Agent
+- Package Generation Agent
+
+Expected backend areas:
+- api
+- routes
+- core
+- schemas
+- models
+- services
+- agents
+- checkers
+- parsers
+- generators
+- repositories
+- utils
+- tests
+
+Expected frontend areas:
+- dashboard
+- conference selection
+- paper upload
+- compliance report
+- issue details
+- package generation
+- project history
+
+Expected output format:
+1. Project overview
+2. End-to-end user flow
+3. How AI Conferences 2026.html will be used as reference
+4. 5-phase build plan
+5. Backend module plan
+6. Frontend module plan
+7. Agents and checkers plan
+8. Pydantic schema plan
+9. API endpoint plan
+10. Folder structure proposal
+11. Dependency plan
+12. Testing plan
+13. Risks and assumptions
+14. Approval checklist before coding
+
+Very important:
+Only propose the plan and skeleton.
+Do not create or modify files until I explicitly approve.

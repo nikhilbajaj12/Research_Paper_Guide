@@ -1,0 +1,112 @@
+Proceed with Phase 1: Foundation & Core Infrastructure for PaperGuide AI.
+
+Create the project scaffold from scratch based on the approved plan.
+
+Important instructions:
+1. Create only the foundation and clean skeleton.
+2. Do not implement heavy business logic yet.
+3. Use FastAPI for backend.
+4. Use Pydantic for schemas and validation models.
+5. Follow Python best practices.
+6. Keep routes thin.
+7. Keep business logic inside services.
+8. Keep deterministic validation inside checkers.
+9. Keep AI-assisted logic inside agents as          paper_routes.py9. Keep AI-assisted logic inside agents as placeholders only.
+          compliance_routes.py
+          package_routes.py
+    core/
+      config.py
+      constants.py
+      exceptions.py
+      logging.py
+    schemas/
+      common_schema.py
+      conference_schema.py
+      paper_schema.py
+      compliance_schema.py
+      package_schema.py
+    models/
+      conference.py
+      paper.py
+      compliance.py
+      project.py
+    services/
+      conference_service.py
+      paper_service.py
+      parser_service.py
+      compliance_service.py
+      package_service.py
+    agents/
+      guideline_agent.py
+      paper_review_agent.py
+      claims_integrity_agent.py
+    checkers/
+      anonymity_checker.py
+      page_limit_checker.py
+      reference_checker.py
+      citation_checker.py
+      template_checker.py
+      checklist_checker.py
+      claims_checker.py
+    parsers/
+      pdf_parser.py
+      docx_parser.py
+      latex_zip_parser.py
+    generators/
+      latex_package_generator.py
+      report_generator.py
+    repositories/
+      conference_repository.py
+      project_repository.py
+    utils/
+      file_utils.py
+      text_utils.py
+      zip_utils.py
+      validation_utils.py
+    tests/
+      test_health.py
+
+Also create:
+backend/requirements.txt
+backend/.env.example
+backend/README.md
+backend/pyproject.toml
+
+Minimum implementation required:
+1. FastAPI app should start successfully.
+2. Add health endpoint: GET /api/v1/health
+3. Add empty route skeletons for conferences, papers, compliance, and packages.
+4. Add Pydantic schema placeholders with basic fields.
+5. Add service placeholders with TODO comments.
+6. Add checker/parser/generator placeholders with TODO comments.
+7. Add README explaining folder structure.
+8. Add requirements.txt with required dependencies.
+
+Do not create frontend yet.
+Do not implement upload logic yet.
+Do not implement parsing logic yet.
+Do not implement AI calls yet.
+
+After creating the scaffold, provide:
+1. Created folder tree
+2. Important files summary
+3. How to run backend locally
+4. Next step recommendation
+10. Keep file parsing inside parsers.
+11. Keep ZIP, LaTeX, and report creation inside generators.
+12. Keep constants, settings, logging, and exceptions inside core.
+13. Keep reusable helper functions inside utils.
+14. Add TODO comments where implementation will come later.
+15. Do not fabricate conference rules, citations, references, results, or metrics.
+
+Create this backend structure:
+
+backend/
+  app/
+    main.py
+    api/
+      v1/
+        api_router.py
+        routes/
+          health_routes.py
+          conference_routes.py
