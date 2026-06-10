@@ -1,23 +1,23 @@
 'use client';
 
 import React from 'react';
-import { getSeverityColor } from '@/utils/formatters';
 
 interface BadgeProps {
   text: string;
-  variant?: 'success' | 'warning' | 'error' | 'info';
+  variant?: 'success' | 'warning' | 'error' | 'info' | 'default';
 }
 
-export const Badge: React.FC<BadgeProps> = ({ text, variant = 'info' }) => {
+export const Badge: React.FC<BadgeProps> = ({ text, variant = 'default' }) => {
   const colors = {
-    success: 'bg-green-100 text-green-800',
-    warning: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800',
-    info: 'bg-blue-100 text-blue-800',
+    success: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    warning: 'bg-amber-50 text-amber-700 border-amber-200',
+    error: 'bg-red-50 text-red-700 border-red-200',
+    info: 'bg-blue-50 text-blue-700 border-blue-200',
+    default: 'bg-slate-50 text-slate-600 border-slate-200',
   };
 
   return (
-    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${colors[variant]}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${colors[variant]}`}>
       {text}
     </span>
   );

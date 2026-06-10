@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button } from '@/components/common/Button';
+import { Card } from '@/components/common/Card';
 import { Loader } from '@/components/common/Loader';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { packageApi } from '@/services/packageApi';
@@ -28,14 +29,12 @@ export default function PackagesPage() {
   const handleGenerate = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const paperData = localStorage.getItem('uploadedPaper');
       if (!paperData) {
         router.push(ROUTES.UPLOAD);
         return;
       }
-
       const { paper_id } = JSON.parse(paperData);
       const result = await packageApi.generatePackage(paper_id, getConferenceId());
       setPkg(result);
@@ -49,7 +48,6 @@ export default function PackagesPage() {
 
   const handleDownload = async () => {
     if (!pkg) return;
-
     try {
       const blob = await packageApi.downloadPackage(pkg.package_id);
       const url = window.URL.createObjectURL(blob);
@@ -67,52 +65,84 @@ export default function PackagesPage() {
 
   return (
     <PageContainer>
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Overleaf Package Generation</h1>
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Packages</h1>
+          <p className="text-slate-500 mt-1">Generate and download Overleaf-ready LaTeX packages.</p>
+        </div>
 
         {!pkg ? (
-          <div className="bg-white p-8 rounded-lg shadow">
-            <p className="mb-6 text-gray-700">
-              Generate an Overleaf-ready LaTeX package with main.tex, references.bib, and compliance report.
-            </p>
-            <Button onClick={handleGenerate} disabled={loading}>
-              {loading ? <Loader /> : 'Generate Package'}
-            </Button>
+          <Card>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 mb-1">Generate Overleaf Package</h2>
+                <p className="text-sm text-slate-500">
+                  Generate an Overleaf-ready LaTeX package with main.tex, references.bib, and compliance report.
+                </p>
+              </div>
+              <Button onClick={handleGenerate} disabled={loading}>
+                {loading ? <Loader /> : 'Generate Package'}
+              </Button>
+            </div>
             {error && <div className="mt-4"><ErrorMessage message={error} /></div>}
-          </div>
+          </Card>
         ) : (
           <div className="space-y-6">
-            <div className="bg-green-100 p-6 rounded-lg">
-              <p className="text-green-800 font-semibold">Package generated successfully!</p>
-            </div>
+            <Card className="border-emerald-200 bg-emerald-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="font-semibold text-emerald-800">Package generated successfully!</p>
+              </div>
+            </Card>
 
-            <div className="bg-white p-8 rounded-lg shadow">
-              <h2 className="text-2xl font-bold mb-4">Generated Files</h2>
-              <ul className="space-y-2">
+            <Card>
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Generated Files</h2>
+              <div className="space-y-2">
                 {pkg.generated_files.map(file => (
-                  <li key={file.file_name} className="flex items-center p-2 bg-gray-50 rounded">
-                    <span className="font-mono text-sm">{file.file_name}</span>
-                    <span className="ml-auto text-gray-500 text-sm">{file.file_type}</span>
+                  <div key={file.file_name} className="flex items-center p-3 rounded-lg bg-slate-50 border border-slate-200">
+                    <svg className="w-4 h-4 text-slate-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="font-mono text-sm text-slate-800">{file.file_name}</span>
+                    <span className="ml-auto text-xs text-slate-500">{file.file_type}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <h2 className="text-lg font-bold text-slate-900 mb-4">Next Steps</h2>
+              <ol className="space-y-2 text-sm text-slate-600">
+                {[
+                  'Download the ZIP package below',
+                  'Upload ZIP to Overleaf',
+                  'Ensure neurips_2026.sty exists in project',
+                  'Set main.tex as main file',
+                  'Recompile from scratch if references don\'t appear',
+                  'Review and submit to conference',
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold mt-0.5">{i + 1}</span>
+                    {step}
                   </li>
                 ))}
-              </ul>
-            </div>
-
-            <div className="bg-white p-8 rounded-lg shadow">
-              <h2 className="text-2xl font-bold mb-4">Next Steps</h2>
-              <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                <li>Download the ZIP package below</li>
-                <li>Upload ZIP to Overleaf</li>
-                <li>Ensure neurips_2026.sty exists in project</li>
-                <li>Set main.tex as main file</li>
-                <li>Recompile from scratch if references dont appear</li>
-                <li>Review and submit to conference</li>
               </ol>
-            </div>
+            </Card>
 
-            <div className="flex gap-4">
-              <Button onClick={handleDownload}>Download Package</Button>
-              <Button onClick={() => router.push(ROUTES.UPLOAD)} variant="secondary">Upload New Paper</Button>
+            <div className="flex gap-3">
+              <Button onClick={handleDownload}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download Package
+              </Button>
+              <Button onClick={() => router.push(ROUTES.UPLOAD)} variant="secondary">
+                Upload New Paper
+              </Button>
             </div>
           </div>
         )}

@@ -1,0 +1,239 @@
+Improve the PaperGuide AI frontend UI to make it look like a professional production-grade SaaS dashboard, not a simple one-page demo.
+
+Current issue:
+The current UI is too plain. It only shows a basic blue header, centered title, start button, and simple conference cards. Redesign it completely with a modern, polished, enterprise-grade look while keeping the existing app flow and backend integration intact.
+
+Project context:
+PaperGuide AI is a conference-aware research paper submission assistant. It helps users:
+1. Select a conference such as NeurIPS
+2. Upload a research paper PDF/DOCX/LaTeX ZIP
+3. Analyze compliance against conference guidelines
+4. View compliance issues and readiness score
+5. Generate an Overleaf-ready ZIP package
+
+Important:
+Do not break existing API integration.
+Do not remove existing functionality.
+Do not implement fake backend logic.
+Do not fabricate conference rules or results.
+Only improve frontend UI/UX and component structure.
+
+Design goal:
+Create a modern professional UI similar to an AI SaaS product / enterprise dashboard.
+
+Use this layout:
+
+1. App Shell
+- Add a clean left sidebar or top navigation.
+- App name: PaperGuide AI
+- Add navigation items:
+  - Dashboard
+  - New Analysis
+  - Reports
+  - Packages
+  - Conferences
+- Add a top-right status/action area:
+  - MVP: NeurIPS Enabled
+  - Backend Connected indicator
+  - Settings icon placeholder
+
+2. Hero Section
+Replace the plain centered title with a professional hero section:
+- Large title:
+  "Conference-Aware Research Paper Submission Assistant"
+- Subtitle:
+  "Validate your paper against NeurIPS-style submission rules, detect compliance issues, and generate an Overleaf-ready package."
+- Primary CTA:
+  "Start New Analysis"
+- Secondary CTA:
+  "View Demo Flow"
+- Add a subtle gradient background or soft card background.
+
+3. Workflow Stepper
+Add a visual 5-step workflow card:
+1. Select Conference
+2. Upload Paper
+3. Run Compliance Checks
+4. Review Issues
+5. Generate Overleaf ZIP
+
+Each step should have:
+- Icon
+- Step number
+- Short description
+- Active/completed/disabled visual state
+
+4. Conference Selection Section
+Redesign conference cards professionally.
+
+For NeurIPS card:
+- Highlight as available
+- Show:
+  - NeurIPS 2026
+  - Anonymous review required
+  - Main page limit: 9 pages
+  - Official LaTeX template required
+  - OpenReview submission
+- Add badge:
+  "Available"
+- Add button:
+  "Select NeurIPS"
+
+For other conferences:
+- CVPR, ICML, ACL, EMNLP
+- Show "Coming Soon"
+- Keep them visually disabled but polished.
+
+Cards should include:
+- Conference icon or initials
+- Clean badges
+- Hover effect
+- Selected state
+
+5. Upload Panel
+Add a professional upload card:
+- Drag-and-drop upload zone
+- Supported formats:
+  PDF, DOCX, LaTeX ZIP
+- Show max file size note
+- Show selected file name, file size, and file type
+- Add upload progress placeholder
+- Add Analyze button disabled until file and conference are selected
+
+6. Compliance Dashboard Preview
+Add a right-side or lower dashboard preview section:
+- Readiness Score card
+- Critical Issues count
+- Warnings count
+- Passed Checks count
+- Package Status card
+
+Use placeholder UI values if no report exists:
+- Score: --
+- Status: Waiting for paper upload
+- Issues: 0
+- Warnings: 0
+
+Do not fake actual analysis results.
+
+7. Report UI Components
+Create reusable components:
+- ComplianceScore
+- IssueCard
+- IssueList
+- PassedChecks
+- FixSuggestionPanel
+- PackageGenerationPanel
+- DownloadPackageButton
+
+Design IssueCard with severity colors:
+- critical: red
+- warning: amber
+- info: blue
+- passed: green
+
+8. Visual Style
+Use a clean modern theme:
+- Background: light gray / slate
+- Cards: white with soft shadow
+- Primary color: indigo / blue
+- Accent: violet / cyan
+- Success: green
+- Warning: amber
+- Critical: red
+- Rounded corners
+- Soft borders
+- Proper spacing
+- Professional typography
+
+Use Tailwind CSS if available.
+If Tailwind is not configured, use clean CSS modules or global CSS.
+
+9. Responsiveness
+Make UI responsive:
+- Desktop: sidebar + dashboard grid
+- Tablet: two-column layout
+- Mobile: stacked layout
+- Cards should not overflow
+- Upload panel should be usable on mobile
+
+10. Frontend structure
+Organize UI cleanly:
+
+frontend/src/components/
+  layout/
+    AppShell.tsx
+    Header.tsx
+    Sidebar.tsx
+    PageContainer.tsx
+  dashboard/
+    HeroSection.tsx
+    WorkflowStepper.tsx
+    StatsPreview.tsx
+  conference/
+    ConferenceCard.tsx
+    ConferenceSelector.tsx
+    GuidelineSummary.tsx
+  upload/
+    FileUploadBox.tsx
+    UploadProgress.tsx
+  report/
+    ComplianceScore.tsx
+    IssueCard.tsx
+    IssueList.tsx
+    PassedChecks.tsx
+    FixSuggestionPanel.tsx
+  package/
+    PackageGenerationPanel.tsx
+    DownloadPackageButton.tsx
+  common/
+    Button.tsx
+    Badge.tsx
+    Card.tsx
+    Loader.tsx
+    EmptyState.tsx
+    ErrorMessage.tsx
+
+11. Page behavior
+Dashboard page should show:
+- HeroSection
+- WorkflowStepper
+- ConferenceSelector
+- UploadPanel
+- Compliance preview
+- Generate package panel placeholder
+
+User flow:
+- User selects NeurIPS
+- User uploads file
+- Upload API is called
+- Analyze button calls compliance API
+- Report section updates with API response
+- Generate Package button calls package API
+- Download button appears after package generation
+
+12. Do not overbuild
+Do not add authentication.
+Do not add database UI.
+Do not add billing.
+Do not add unrelated pages.
+Do not use fake AI-generated content.
+Focus only on the MVP UI flow.
+
+13. Expected final result
+After implementation, the homepage should look like a polished product dashboard, not a basic demo page.
+
+It should clearly communicate:
+- What PaperGuide AI does
+- How the 5-step flow works
+- Which conference is selected
+- What paper can be uploaded
+- What compliance checks will run
+- What final output will be generated
+
+After completing changes, provide:
+1. List of files created/modified
+2. Component structure summary
+3. How to run frontend
+4. Any assumptions made
+5. Known limitations
