@@ -22,12 +22,14 @@ class ParserService:
     def parse(self, file_path: str, file_type: str) -> Dict:
         """Parse file based on type."""
         logger.info(f"Parsing file: {file_path}, type: {file_type}")
-        
-        if file_type.lower() == 'pdf':
+
+        normalized_file_type = file_type.lower().lstrip('.')
+
+        if normalized_file_type == 'pdf':
             return self.pdf_parser.parse(file_path)
-        elif file_type.lower() == 'docx':
+        elif normalized_file_type == 'docx':
             return self.docx_parser.parse(file_path)
-        elif file_type.lower() == 'zip':
+        elif normalized_file_type == 'zip':
             return self.latex_parser.parse(file_path)
         else:
             logger.warning(f"Unsupported file type: {file_type}")

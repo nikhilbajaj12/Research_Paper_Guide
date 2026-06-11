@@ -50,6 +50,14 @@ class PackageService:
             
             files_dict = {}
             generated_files = []
+
+            for source_file, source_content in parsed_paper.get('source_files', {}).items():
+                files_dict[source_file] = source_content
+                generated_files.append({
+                    'file_name': source_file,
+                    'file_type': os.path.splitext(source_file)[1].lstrip('.') or 'file',
+                    'file_path': source_file
+                })
             
             main_tex = self.latex_gen.generate_main_tex(
                 parsed_paper,
@@ -57,19 +65,21 @@ class PackageService:
                 has_references=has_references
             )
             files_dict['main.tex'] = main_tex
-            generated_files.append({
-                'file_name': 'main.tex',
-                'file_type': 'tex',
-                'file_path': 'main.tex'
-            })
+            if not any(item['file_path'] == 'main.tex' for item in generated_files):
+                generated_files.append({
+                    'file_name': 'main.tex',
+                    'file_type': 'tex',
+                    'file_path': 'main.tex'
+                })
             
-            references_bib = self.latex_gen.generate_references_bib()
-            files_dict['references.bib'] = references_bib
-            generated_files.append({
-                'file_name': 'references.bib',
-                'file_type': 'bib',
-                'file_path': 'references.bib'
-            })
+            if not parsed_paper.get('bib_files'):
+                references_bib = self.latex_gen.generate_references_bib()
+                files_dict['references.bib'] = references_bib
+                generated_files.append({
+                    'file_name': 'references.bib',
+                    'file_type': 'bib',
+                    'file_path': 'references.bib'
+                })
             
             readme = self.latex_gen.generate_readme()
             files_dict['README_OVERLEAF_INSTRUCTIONS.md'] = readme

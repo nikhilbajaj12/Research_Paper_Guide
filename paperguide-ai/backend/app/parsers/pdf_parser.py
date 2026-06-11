@@ -1,6 +1,7 @@
 """PDF parser for extracting text and metadata."""
 
 import re
+from pathlib import Path
 from typing import Optional, List, Dict
 from ..core import get_logger
 
@@ -33,16 +34,20 @@ class PDFParser:
                 
                 text = ""
                 for page in reader.pages:
-                    text += page.extract_text() + "\n"
+                    text += (page.extract_text() or "") + "\n"
             
             sections = self._detect_sections(text)
             
             return {
                 "page_count": page_count,
-                "extracted_text": text[:5000],
+                "extracted_text": text,
                 "sections": sections,
                 "abstract_found": self._find_abstract(text),
                 "references_found": self._find_references(text),
+                "source_type": "pdf",
+                "source_files": {
+                    "original_paper.pdf": Path(file_path).read_bytes(),
+                },
             }
         except Exception as e:
             logger.error(f"Error parsing PDF: {str(e)}")

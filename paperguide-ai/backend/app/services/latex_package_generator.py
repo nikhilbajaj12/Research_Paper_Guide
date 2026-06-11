@@ -18,10 +18,20 @@ class LatexPackageGenerator:
     ) -> str:
         """Generate main.tex file."""
         logger.info("Generating main.tex")
-        
-        title = parsed_paper.get('title', 'TODO: Add Paper Title')
-        abstract = parsed_paper.get('abstract', 'TODO: Add abstract here')
-        extracted_text = parsed_paper.get('extracted_text', '')
+
+        main_tex_content = parsed_paper.get('main_tex_content')
+        if main_tex_content:
+            return main_tex_content
+
+        title = LatexPackageGenerator._escape_latex(
+            parsed_paper.get('title') or 'Imported Research Paper'
+        )
+        abstract = LatexPackageGenerator._escape_latex(
+            parsed_paper.get('abstract') or 'Abstract not separately identified during import.'
+        )
+        extracted_text = LatexPackageGenerator._escape_latex(
+            parsed_paper.get('extracted_text') or ''
+        )
         
         tex_content = r"""\documentclass{article}
 
@@ -47,26 +57,8 @@ class LatexPackageGenerator:
 """ + abstract + r"""
 \end{abstract}
 
-\section{Introduction}
-% TODO: Add introduction text
-
-\section{Related Work}
-% TODO: Add related work
-
-\section{Method}
-% TODO: Add methodology
-
-\section{Experiments}
-% TODO: Add experimental setup and results
-
-\section{Results}
-% TODO: Add results and analysis
-
-\section{Discussion}
-% TODO: Add discussion
-
-\section{Conclusion}
-% TODO: Add conclusion
+\section*{Imported Paper Content}
+""" + extracted_text + r"""
 
 """
         
@@ -87,6 +79,23 @@ class LatexPackageGenerator:
 """
         
         return tex_content
+
+    @staticmethod
+    def _escape_latex(text: str) -> str:
+        """Escape plain extracted text for inclusion in a LaTeX document."""
+        replacements = {
+            '\\': r'\textbackslash{}',
+            '&': r'\&',
+            '%': r'\%',
+            '$': r'\$',
+            '#': r'\#',
+            '_': r'\_',
+            '{': r'\{',
+            '}': r'\}',
+            '~': r'\textasciitilde{}',
+            '^': r'\textasciicircum{}',
+        }
+        return ''.join(replacements.get(char, char) for char in text)
 
     @staticmethod
     def generate_references_bib() -> str:

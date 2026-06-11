@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..schemas import PackageGenerationRequest, PackageGenerationResponse
 from ..services.package_service import PackageService, PACKAGE_STORAGE
-from ..routes.compliance import PAPER_STORAGE as COMPLIANCE_PAPER_STORAGE
+from ..routes.compliance import (
+    PAPER_STORAGE as COMPLIANCE_PAPER_STORAGE,
+    COMPLIANCE_REPORT_STORAGE,
+)
 from ..services.parser_service import ParserService
 from ..core import get_logger
 
@@ -47,12 +50,17 @@ async def generate_package(
         parser_service = ParserService()
         parsed_paper = parser_service.parse(storage_path, file_type)
         
-        compliance_report = {
-            "readiness_score": 75,
-            "overall_status": "needs_minor_fixes",
-            "critical_count": 0,
-            "warnings_count": 2,
-        }
+        compliance_report = COMPLIANCE_REPORT_STORAGE.get(paper_id)
+        if not compliance_report:
+            raise HTTPException(
+                status_code=409,
+                detail="Run compliance analysis before generating a package"
+            )
+        if compliance_report.get("conference_id") != request.conference_id:
+            raise HTTPException(
+                status_code=409,
+                detail="Run compliance analysis for the selected conference before generating a package"
+            )
         
         package_id, package_metadata = package_service.generate_package(
             paper_id=paper_id,
