@@ -13,7 +13,7 @@ interface IssueListProps {
   textColor: string;
 }
 
-export const IssueList: React.FC<IssueListProps> = ({ issues, title, borderColor, textColor }) => {
+export const IssueList: React.FC<IssueListProps> = ({ issues, title, severity, borderColor, textColor }) => {
   const filtered = issues.filter((i) => i.severity === severity);
   if (filtered.length === 0) return null;
 

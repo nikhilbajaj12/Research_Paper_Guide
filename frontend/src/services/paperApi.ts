@@ -6,9 +6,7 @@ export const paperApi = {
     formData.append('file', file);
     formData.append('conference_id', conferenceId);
     
-    const response = await apiClient.post('/api/v1/papers/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const response = await apiClient.post('/api/v1/papers/upload', formData);
     return response.data;
   },
 };

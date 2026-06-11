@@ -56,6 +56,7 @@ class ConferenceType(str, Enum):
     NLP = "nlp"
     VISION = "vision"
     DATA = "data"
+    WORKSHOP = "workshop"
 
 
 class PaperStatus(str, Enum):
