@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..services import ConferenceService
 from ..schemas import ConferenceBrief, ConferenceDetailed, ConferenceGuidelines
+from ..conference import config_loader
 from ..core import get_logger, NotFoundError
 
 logger = get_logger(__name__)
@@ -128,3 +129,23 @@ async def get_guidelines(
     except Exception as e:
         logger.error(f"Error retrieving guidelines for {conference_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve guidelines")
+
+
+@router.get("/configs/list", response_model=list[dict])
+async def list_configs():
+    """List all available conference configs (from JSON files, not DB)."""
+    return config_loader.list_available()
+
+
+@router.get("/configs/{conference_id}/validate")
+async def validate_config(conference_id: str):
+    """Validate a conference config file."""
+    return config_loader.validate_config(conference_id)
+
+
+@router.post("/configs/reload")
+async def reload_configs():
+    """Clear config cache and force-reload all configs."""
+    config_loader.clear_cache()
+    available = config_loader.list_available()
+    return {"status": "ok", "configs_reloaded": len(available), "available": available}

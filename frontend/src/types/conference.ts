@@ -16,6 +16,7 @@ export interface ConferenceGuidelines {
   max_pages: number;
   requires_anonymity: boolean;
   reference_format: string;
+  required_sections?: string[];
 }
 
 export interface Conference extends ConferenceBrief {

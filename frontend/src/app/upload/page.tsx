@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button } from '@/components/common/Button';
+import { Badge } from '@/components/common/Badge';
 import { Card } from '@/components/common/Card';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { Loader } from '@/components/common/Loader';
@@ -15,13 +16,16 @@ import { isValidFileType, isValidFileSize } from '@/utils/validators';
 
 const DEFAULT_CONFERENCE = 'neurips-2025';
 
-function getConferenceId(): string {
-  if (typeof window === 'undefined') return DEFAULT_CONFERENCE;
+function getConferenceInfo(): { id: string; name: string } {
+  if (typeof window === 'undefined') return { id: DEFAULT_CONFERENCE, name: 'NeurIPS 2026' };
   const stored = localStorage.getItem('selectedConference');
   if (stored) {
-    try { return JSON.parse(stored).id || DEFAULT_CONFERENCE; } catch { return DEFAULT_CONFERENCE; }
+    try {
+      const data = JSON.parse(stored);
+      return { id: data.id || DEFAULT_CONFERENCE, name: data.name || 'NeurIPS' };
+    } catch { return { id: DEFAULT_CONFERENCE, name: 'NeurIPS 2026' }; }
   }
-  return DEFAULT_CONFERENCE;
+  return { id: DEFAULT_CONFERENCE, name: 'NeurIPS 2026' };
 }
 
 export default function UploadPage() {
@@ -29,6 +33,7 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const conference = getConferenceInfo();
 
   const handleFileSelect = (f: File) => {
     if (!isValidFileType(f.name)) {
@@ -51,7 +56,7 @@ export default function UploadPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await paperApi.uploadPaper(file, getConferenceId());
+      const result = await paperApi.uploadPaper(file, conference.id);
       localStorage.setItem('uploadedPaper', JSON.stringify(result));
       router.push(ROUTES.REPORT);
     } catch (err: any) {
@@ -68,6 +73,14 @@ export default function UploadPage() {
           <h1 className="text-2xl font-bold text-slate-900">New Analysis</h1>
           <p className="text-slate-500 mt-1">Upload your paper for compliance checking.</p>
         </div>
+
+        <Card>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-500">Conference:</span>
+            <Badge text={conference.name} variant="info" />
+            <span className="text-xs text-slate-400 ml-auto">Selected on home screen</span>
+          </div>
+        </Card>
 
         <FileUploadBox onFileSelect={handleFileSelect} selectedFile={file ? { name: file.name, size: file.size } : null} />
 

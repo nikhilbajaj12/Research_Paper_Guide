@@ -1,10 +1,12 @@
-name: filesystem
+name: DuckDuckGo MCP Server
 version: 0.0.1
 schema: v1
+
 mcpServers:
-  filesystem:
+  - name: DuckDuckGo MCP Server
     command: npx
     args:
       - -y
-      - @modelcontextprotocol/server-filesystem
-      - C:\Users\NB125520\Downloads\Research_Paper_POC
+      - duckduckgo-mcp-server 
+    env:
+      DUCKDUCKGO_API_KEY: "<your_duckduckgo_api_key>" # If needed

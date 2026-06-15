@@ -29,8 +29,9 @@ class PackageService:
         conference_id: str,
         parsed_paper: Dict,
         compliance_report: Dict,
+        conference_config: Optional[Dict] = None,
         project_id: Optional[str] = None,
-        package_type: str = "neurips_overleaf"
+        package_type: str = "overleaf"
     ) -> Tuple[str, Dict]:
         """
         Generate Overleaf package.
@@ -62,7 +63,8 @@ class PackageService:
             main_tex = self.latex_gen.generate_main_tex(
                 parsed_paper,
                 has_citations=has_citations,
-                has_references=has_references
+                has_references=has_references,
+                conference_config=conference_config,
             )
             files_dict['main.tex'] = main_tex
             if not any(item['file_path'] == 'main.tex' for item in generated_files):
@@ -81,7 +83,10 @@ class PackageService:
                     'file_path': 'references.bib'
                 })
             
-            readme = self.latex_gen.generate_readme()
+            readme = self.latex_gen.generate_readme(
+                conference_config=conference_config,
+                compliance_data=compliance_report,
+            )
             files_dict['README_OVERLEAF_INSTRUCTIONS.md'] = readme
             generated_files.append({
                 'file_name': 'README_OVERLEAF_INSTRUCTIONS.md',
@@ -115,6 +120,16 @@ class PackageService:
                 'file_type': 'txt',
                 'file_path': 'COMPLIANCE_SUMMARY.txt'
             })
+            
+            recommendations = compliance_report.get('recommendations', [])
+            recommendations_md = self.latex_gen.generate_recommendations_md(recommendations)
+            if recommendations:
+                files_dict['recommendations.md'] = recommendations_md
+                generated_files.append({
+                    'file_name': 'recommendations.md',
+                    'file_type': 'md',
+                    'file_path': 'recommendations.md'
+                })
             
             zip_path = self.zip_utils.create_package_zip(
                 files_dict,

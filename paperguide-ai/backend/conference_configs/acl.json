@@ -1,0 +1,33 @@
+{
+  "conference_name": "ACL",
+  "conference_year": 2026,
+  "max_pages": 8,
+  "min_pages": 1,
+  "blind_review": true,
+  "reference_style": "acl",
+  "required_sections": [
+    "abstract",
+    "introduction",
+    "method",
+    "experiments",
+    "conclusion"
+  ],
+  "optional_sections": [
+    "appendix",
+    "limitations",
+    "ethical considerations"
+  ],
+  "required_keywords": [],
+  "margin_rules": {
+    "top_cm": 2.54,
+    "bottom_cm": 2.54,
+    "left_cm": 2.54,
+    "right_cm": 2.54
+  },
+  "package_template": "acl",
+  "scoring_weights": {
+    "critical": 20,
+    "warning": 8,
+    "info": 2
+  }
+}

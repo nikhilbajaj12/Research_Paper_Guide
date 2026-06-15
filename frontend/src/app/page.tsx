@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/common/Button';
+import { Card } from '@/components/common/Card';
+import { Badge } from '@/components/common/Badge';
 import { Loader } from '@/components/common/Loader';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { HeroSection } from '@/components/dashboard/HeroSection';
 import { WorkflowStepper } from '@/components/dashboard/WorkflowStepper';
 import { StatsPreview } from '@/components/dashboard/StatsPreview';
 import { ConferenceSelector } from '@/components/conference/ConferenceSelector';
+import { RecommendationsPanel } from '@/components/report/RecommendationsPanel';
 import { FileUploadBox } from '@/components/upload/FileUploadBox';
 import { UploadProgress } from '@/components/upload/UploadProgress';
 import { PackageGenerationPanel } from '@/components/package/PackageGenerationPanel';
@@ -26,6 +29,7 @@ import { Package } from '@/types/package';
 export default function HomePage() {
   const router = useRouter();
   const [conferences, setConferences] = useState<ConferenceBrief[]>([]);
+  const [conferenceConfigs, setConferenceConfigs] = useState<Record<string, any>>({});
   const [selectedConference, setSelectedConference] = useState<Conference | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,17 +42,61 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchConferences = async () => {
+    const fetchData = async () => {
       try {
-        const data = await conferenceApi.getConferences();
-        setConferences(data);
+        const configList = await conferenceApi.getConfigList();
+
+        const conferenceList: ConferenceBrief[] = configList.map(cfg => ({
+          id: cfg.conference_id,
+          abbr: cfg.conference_name.substring(0, 4).toUpperCase(),
+          name: cfg.conference_name,
+          start_date: `${cfg.conference_year}-01-01`,
+          submission_deadline: `${cfg.conference_year}-06-01`,
+          location: 'TBD',
+        }));
+        setConferences(conferenceList);
+
+        const cfgMap: Record<string, any> = {};
+        const details = await Promise.allSettled(
+          conferenceList.map(conf =>
+            conferenceApi.getConferenceById(conf.id).then(d => ({ id: conf.id, detail: d }))
+          )
+        );
+        for (const result of details) {
+          if (result.status === 'fulfilled') {
+            const { id, detail } = result.value;
+            cfgMap[id] = {
+              conference_name: detail.name,
+              conference_year: detail.start_date ? parseInt(detail.start_date.slice(0, 4)) : 2026,
+              max_pages: detail.max_pages || detail.guidelines?.max_pages || 9,
+              blind_review: detail.requires_anonymity ?? detail.guidelines?.requires_anonymity ?? true,
+              reference_style: detail.reference_format || detail.guidelines?.reference_format || 'bibtex',
+              required_sections: detail.guidelines?.required_sections || [],
+              package_template: id.split('-')[0] || 'neurips',
+            };
+          }
+        }
+        for (const conf of conferenceList) {
+          if (!cfgMap[conf.id]) {
+            cfgMap[conf.id] = {
+              conference_name: conf.name,
+              conference_year: parseInt(conf.start_date.slice(0, 4)),
+              max_pages: 9,
+              blind_review: true,
+              reference_style: 'bibtex',
+              required_sections: [],
+              package_template: conf.id,
+            };
+          }
+        }
+        setConferenceConfigs(cfgMap);
       } catch (err: any) {
         setError(err.message || 'Failed to load conferences');
       } finally {
         setLoading(false);
       }
     };
-    fetchConferences();
+    fetchData();
   }, []);
 
   const handleSelectConference = async (conf: ConferenceBrief) => {
@@ -136,6 +184,8 @@ export default function HomePage() {
     }
   };
 
+  const cfgData = selectedConference ? conferenceConfigs[selectedConference.id] : null;
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -156,12 +206,45 @@ export default function HomePage() {
         conferences={conferences}
         selectedId={selectedConference?.id || null}
         onSelect={handleSelectConference}
+        configMap={conferenceConfigs}
       />
 
       {loadingDetails && (
         <div className="flex justify-center py-4">
           <Loader />
         </div>
+      )}
+
+      {selectedConference && !loadingDetails && cfgData && (
+        <Card>
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">
+                {cfgData.conference_name} {cfgData.conference_year}
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">{selectedConference.id}</p>
+            </div>
+            <Badge text="Selected" variant="success" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+            <div className="p-3 rounded-lg bg-slate-50">
+              <p className="text-xs text-slate-500">Max Pages</p>
+              <p className="text-lg font-bold text-slate-800">{cfgData.max_pages}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-slate-50">
+              <p className="text-xs text-slate-500">Blind Review</p>
+              <p className="text-lg font-bold text-slate-800">{cfgData.blind_review ? 'Yes' : 'No'}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-slate-50">
+              <p className="text-xs text-slate-500">Reference Style</p>
+              <p className="text-lg font-bold text-slate-800 capitalize">{cfgData.reference_style}</p>
+            </div>
+            <div className="p-3 rounded-lg bg-slate-50">
+              <p className="text-xs text-slate-500">Required Sections</p>
+              <p className="text-lg font-bold text-slate-800">{cfgData.required_sections?.length || 0}</p>
+            </div>
+          </div>
+        </Card>
       )}
 
       {selectedConference && !loadingDetails && (
@@ -189,6 +272,47 @@ export default function HomePage() {
         </div>
       )}
 
+      {report && (
+        <Card>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="text-center">
+              <p className="text-xs text-slate-500 mb-1">Compliance Score</p>
+              <div className={`text-4xl font-bold ${
+                report.readiness_score >= 80 ? 'text-emerald-600' :
+                report.readiness_score >= 50 ? 'text-amber-600' : 'text-red-600'
+              }`}>
+                {report.readiness_score}
+                <span className="text-lg text-slate-400">/100</span>
+              </div>
+            </div>
+            <div className="flex-1">
+              <p className="text-xs text-slate-500 mb-1">Status</p>
+              <Badge
+                text={report.overall_status.replace(/_/g, ' ')}
+                variant={
+                  report.overall_status === 'submission_ready' ? 'success' :
+                  report.overall_status === 'needs_minor_fixes' ? 'warning' : 'error'
+                }
+              />
+              <div className="grid grid-cols-3 gap-4 mt-3">
+                <div>
+                  <p className="text-xs text-slate-400">Issues</p>
+                  <p className="text-lg font-bold text-slate-800">{report.issues.length}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Critical</p>
+                  <p className={`text-lg font-bold ${report.critical_count > 0 ? 'text-red-600' : 'text-slate-400'}`}>{report.critical_count}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Warnings</p>
+                  <p className={`text-lg font-bold ${report.warnings_count > 0 ? 'text-amber-600' : 'text-slate-400'}`}>{report.warnings_count}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <StatsPreview
         score={report?.readiness_score ?? null}
         criticalCount={report?.critical_count ?? 0}
@@ -196,6 +320,10 @@ export default function HomePage() {
         passedCount={report?.passed_checks?.length ?? 0}
         hasReport={!!report}
       />
+
+      {report && report.recommendations && report.recommendations.length > 0 && (
+        <RecommendationsPanel recommendations={report.recommendations} />
+      )}
 
       {report && !pkg && (
         <PackageGenerationPanel
@@ -245,6 +373,7 @@ export default function HomePage() {
                   {report.issues.filter(i => i.severity === 'critical').map(issue => (
                     <div key={issue.issue_id} className="p-3 rounded-lg bg-red-50 border border-red-100">
                       <p className="text-sm font-medium text-red-800">{issue.message}</p>
+                      {issue.location && <p className="text-xs text-red-500 mt-0.5">Location: {issue.location}</p>}
                       {issue.suggested_fix && <p className="text-xs text-red-600 mt-1">Fix: {issue.suggested_fix}</p>}
                     </div>
                   ))}
@@ -263,6 +392,7 @@ export default function HomePage() {
                   {report.issues.filter(i => i.severity === 'warning').map(issue => (
                     <div key={issue.issue_id} className="p-3 rounded-lg bg-amber-50 border border-amber-100">
                       <p className="text-sm font-medium text-amber-800">{issue.message}</p>
+                      {issue.location && <p className="text-xs text-amber-500 mt-0.5">Location: {issue.location}</p>}
                     </div>
                   ))}
                 </div>

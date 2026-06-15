@@ -1,8 +1,8 @@
 """LaTeX package generator for Overleaf."""
 
-import re
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from ..core import get_logger
+from .template_engine import TemplateEngine
 
 logger = get_logger(__name__)
 
@@ -10,92 +10,123 @@ logger = get_logger(__name__)
 class LatexPackageGenerator:
     """Generate LaTeX package for Overleaf."""
 
-    @staticmethod
+    def __init__(self):
+        self.template_engine = TemplateEngine()
+
     def generate_main_tex(
+        self,
         parsed_paper: Dict,
         has_citations: bool = False,
-        has_references: bool = False
+        has_references: bool = False,
+        conference_config: Optional[Dict] = None,
     ) -> str:
-        """Generate main.tex file."""
+        """Generate main.tex file using conference-aware templates."""
         logger.info("Generating main.tex")
 
         main_tex_content = parsed_paper.get('main_tex_content')
         if main_tex_content:
             return main_tex_content
 
-        title = LatexPackageGenerator._escape_latex(
+        template = (conference_config or {}).get("package_template", "")
+        conference_id = (conference_config or {}).get("conference_id", template)
+
+        title = TemplateEngine.escape_latex(
             parsed_paper.get('title') or 'Imported Research Paper'
         )
-        abstract = LatexPackageGenerator._escape_latex(
+        abstract = TemplateEngine.escape_latex(
             parsed_paper.get('abstract') or 'Abstract not separately identified during import.'
         )
-        extracted_text = LatexPackageGenerator._escape_latex(
+        body = TemplateEngine.escape_latex(
             parsed_paper.get('extracted_text') or ''
         )
-        
-        tex_content = r"""\documentclass{article}
 
-\usepackage{neurips_2026}
+        if has_references:
+            bibliography_section = r"\bibliographystyle{plainnat}" + "\n" + r"\bibliography{references}"
+        else:
+            bibliography_section = r"% TODO: Add \bibliography{} command with your .bib file"
+
+        if has_citations:
+            citation_note = r"\nocite{*}"
+        else:
+            citation_note = r"% TODO: Add \cite{} commands for citations"
+
+        variables = {
+            "title": title,
+            "abstract": abstract,
+            "body": body,
+            "bibliography_section": bibliography_section,
+            "citation_note": citation_note,
+            "style_file": f"{template}_2026" if template else "conference_2026",
+            "conference_name": (conference_config or {}).get("conference_name", "Conference"),
+        }
+
+        if template:
+            try:
+                rendered = self.template_engine.render_main_tex(template, variables)
+                logger.info(f"Template-based main.tex generated for conference: {template}")
+                return rendered
+            except FileNotFoundError:
+                logger.warning(f"No template for {template}, falling back to default")
+
+        try:
+            rendered = self.template_engine.render_main_tex("default", variables)
+            logger.info("Default template fallback used for main.tex")
+            return rendered
+        except FileNotFoundError:
+            logger.warning("No default template found, using hardcoded fallback")
+
+        return self._generate_fallback_main_tex(
+            title, abstract, body, has_citations, has_references, template
+        )
+
+    def _generate_fallback_main_tex(
+        self, title: str, abstract: str, body: str,
+        has_citations: bool, has_references: bool, template: str
+    ) -> str:
+        """Hardcoded fallback if no template files exist."""
+        style_package = f"\\usepackage{{{template}_2026}}" if template else ""
+
+        tex_content = rf"""\documentclass{{article}}
+
+{style_package}
 
 % TODO: Verify this style file exists in your Overleaf project
 
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{graphicx}
-\usepackage{hyperref}
+\usepackage{{amsmath}}
+\usepackage{{amssymb}}
+\usepackage{{graphicx}}
+\usepackage{{hyperref}}
 
-% Anonymous author block for NeurIPS
-\author{Anonymous submission}
+% Anonymous author block for submission
+\author{{Anonymous submission}}
 
-\title{""" + title + r"""}
+\title{{{title}}}
 
-\begin{document}
+\begin{{document}}
 
 \maketitle
 
-\begin{abstract}
-""" + abstract + r"""
-\end{abstract}
+\begin{{abstract}}
+{abstract}
+\end{{abstract}}
 
-\section*{Imported Paper Content}
-""" + extracted_text + r"""
+\section*{{Imported Paper Content}}
+{body}
 
 """
-        
+
         if has_references:
-            tex_content += r"""\bibliographystyle{plainnat}
-\bibliography{references}
-"""
-        
+            tex_content += r"\bibliographystyle{plainnat}" + "\n" + r"\bibliography{references}" + "\n"
+
         if has_citations:
-            tex_content += r"""\nocite{*}
-"""
+            tex_content += r"\nocite{*}" + "\n"
         else:
-            tex_content += r"""% TODO: Add \cite{} commands for citations
-"""
-        
+            tex_content += r"% TODO: Add \cite{} commands for citations" + "\n"
+
         tex_content += r"""
 \end{document}
 """
-        
         return tex_content
-
-    @staticmethod
-    def _escape_latex(text: str) -> str:
-        """Escape plain extracted text for inclusion in a LaTeX document."""
-        replacements = {
-            '\\': r'\textbackslash{}',
-            '&': r'\&',
-            '%': r'\%',
-            '$': r'\$',
-            '#': r'\#',
-            '_': r'\_',
-            '{': r'\{',
-            '}': r'\}',
-            '~': r'\textasciitilde{}',
-            '^': r'\textasciicircum{}',
-        }
-        return ''.join(replacements.get(char, char) for char in text)
 
     @staticmethod
     def generate_references_bib() -> str:
@@ -124,11 +155,73 @@ class LatexPackageGenerator:
 % Add your references above
 """
 
-    @staticmethod
-    def generate_readme() -> str:
-        """Generate Overleaf instructions README."""
+    def generate_readme(
+        self,
+        conference_config: Optional[Dict] = None,
+        compliance_data: Optional[Dict] = None,
+    ) -> str:
+        """Generate Overleaf instructions README using conference-aware templates."""
         logger.info("Generating README_OVERLEAF_INSTRUCTIONS.md")
-        
+
+        template = (conference_config or {}).get("package_template", "")
+        conference_id = (conference_config or {}).get("conference_id", template)
+
+        style_file = f"{template}_2026" if template else "conference_2026"
+        conference_name = (conference_config or {}).get("conference_name", "Conference")
+
+        page_limit = str((conference_config or {}).get("max_pages", "N/A"))
+        reference_style = (conference_config or {}).get("reference_format", "bibtex")
+        blind_review = "Yes" if (conference_config or {}).get("requires_anonymity", True) else "No"
+
+        compliance_data = compliance_data or {}
+        compliance_score = str(compliance_data.get("readiness_score", "N/A"))
+        compliance_status = compliance_data.get("overall_status", "unknown")
+        critical_count = str(compliance_data.get("critical_count", "N/A"))
+        warnings_count = str(compliance_data.get("warnings_count", "N/A"))
+
+        template_urls = {
+            "neurips": "https://neurips.cc/Conferences/2026/PaperInformation/StyleFiles",
+            "icml": "https://icml.cc/Conferences/2026/StyleFiles",
+            "acl": "https://acl-org.github.io/ACL-style-files/",
+            "cvpr": "https://cvpr.thecvf.com/Conferences/2026/AuthorGuidelines",
+            "emnlp": "https://2026.emnlp.org/call-for-papers/",
+        }
+        template_url = template_urls.get(template, f"https://{conference_id}.cc/")
+
+        variables = {
+            "conference_name": conference_name,
+            "conference_id": conference_id,
+            "style_file": style_file,
+            "template_url": template_url,
+            "page_limit": page_limit,
+            "reference_style": reference_style,
+            "blind_review": blind_review,
+            "compliance_score": compliance_score,
+            "compliance_status": compliance_status,
+            "critical_count": critical_count,
+            "warnings_count": warnings_count,
+        }
+
+        if template:
+            try:
+                rendered = self.template_engine.render_readme(template, variables)
+                logger.info(f"Template-based README generated for conference: {template}")
+                return rendered
+            except FileNotFoundError:
+                logger.warning(f"No README template for {template}, falling back to default")
+
+        try:
+            rendered = self.template_engine.render_readme("default", variables)
+            logger.info("Default template fallback used for README")
+            return rendered
+        except FileNotFoundError:
+            logger.warning("No default README template found, using hardcoded fallback")
+
+        return self._generate_fallback_readme()
+
+    @staticmethod
+    def _generate_fallback_readme() -> str:
+        """Hardcoded fallback README if no template files exist."""
         return """# Overleaf LaTeX Package Instructions
 
 ## Setup
@@ -138,7 +231,7 @@ class LatexPackageGenerator:
    - Create new project from uploaded ZIP
 
 2. **Verify Template**:
-   - Ensure `neurips_2026.sty` exists in project root
+   - Ensure the conference `.sty` file exists in project root
    - If missing, upload or install manually
 
 3. **Set Main File**:
@@ -157,47 +250,13 @@ class LatexPackageGenerator:
 
 2. If compilation fails:
    - Check `main.tex` for syntax errors
-   - Verify all `\cite{}` commands have matching entries in `references.bib`
+   - Verify all `\\cite{}` commands have matching entries in `references.bib`
    - Check character encoding (UTF-8)
 
-## Anonymity
+## Compliance
 
-- **For submission**: Keep `\\author{Anonymous submission}`
-- **For preprint**: Replace with actual authors
-- **For internal**: Use `\\usepackage[preprint]{neurips_2026}` if supported
-
-## Compliance Checklist
-
-Before submission, verify:
-
-1. **Page Limit**: Confirm page count does not exceed conference limit
-2. **References**: All citations have corresponding BibTeX entries
-3. **Citations**: All \cite{} commands are present for referenced work
-4. **Anonymity**: No author names, emails, or identifying information (unless preprint)
-5. **Checklist**: Include required conference submission checklist if needed
-6. **Template**: Using official neurips_2026 style
-
-## TODO Tasks
-
-Check main.tex for TODO comments:
-- [ ] Add introduction
-- [ ] Add related work
-- [ ] Add method description
-- [ ] Add experimental setup
-- [ ] Add results
-- [ ] Add discussion
-- [ ] Add conclusion
-- [ ] Verify all claims are supported by citations
-- [ ] Fill in references.bib
-
-## Support
-
-For NeurIPS specific questions:
-- Official Template: https://neurips.cc/
-- Overleaf Help: https://www.overleaf.com/help
-
-For compliance questions:
-- Review compliance_report.json for detailed checklist
+See `compliance_report.json` for detailed checklist results.
+See `recommendations.md` for actionable fix suggestions.
 """
 
     @staticmethod
@@ -217,16 +276,57 @@ For compliance questions:
 - Warnings: {warnings}
 
 See compliance_report.json for full details.
+See recommendations.md for actionable fix suggestions.
 
 ## Next Steps
 
 1. Review issues in compliance_report.json
 2. Address critical issues first
 3. Fix warnings as possible
-4. Verify all TODO items in main.tex
-5. Test compilation in Overleaf
-6. Download and submit
+4. Review recommendations in recommendations.md
+5. Verify all TODO items in main.tex
+6. Test compilation in Overleaf
+7. Download and submit
 
 Note: This is an automated compliance check.
 Manual review is still required before submission.
 """
+
+    @staticmethod
+    def generate_recommendations_md(recommendations: List[Dict]) -> str:
+        """Generate recommendations markdown file."""
+        if not recommendations:
+            return """# Recommendations
+
+No recommendations generated. Your paper passed all compliance checks.
+
+"""
+
+        lines = ["# Recommendations", "", "## Actionable Fix Suggestions", ""]
+        for i, rec in enumerate(recommendations, 1):
+            issue = rec.get("issue", rec.get("suggested_action", "Unknown issue"))
+            category = rec.get("category", "general")
+            severity = rec.get("severity", "warning")
+            location = rec.get("location", "N/A")
+            suggested_action = rec.get("suggested_action", "")
+            explanation = rec.get("explanation", "")
+            can_auto_fix = rec.get("can_auto_fix", False)
+
+            lines.append(f"### {i}. {issue}")
+            lines.append(f"")
+            lines.append(f"- **Category**: {category}")
+            lines.append(f"- **Severity**: {severity}")
+            lines.append(f"- **Location**: {location}")
+            lines.append(f"- **Auto-fixable**: {'Yes' if can_auto_fix else 'No'}")
+            if suggested_action:
+                lines.append(f"- **Suggested Action**: {suggested_action}")
+            if explanation:
+                lines.append(f"- **Explanation**: {explanation}")
+            lines.append("")
+
+        lines.append("---")
+        lines.append("")
+        lines.append("*Generated by PaperGuide AI compliance analysis*")
+        lines.append("")
+
+        return "\n".join(lines)

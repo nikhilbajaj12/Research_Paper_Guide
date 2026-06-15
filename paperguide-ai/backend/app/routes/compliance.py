@@ -1,20 +1,21 @@
 """Compliance analysis routes."""
 
+import asyncio
 import os
 import uuid
+from typing import List
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 from fastapi import Depends
 from ..database import get_db
-from ..schemas import ComplianceAnalyzeRequest, ComplianceReportResponse, FixSuggestion
-from ..services.conference_service import ConferenceService
+from ..schemas import ComplianceAnalyzeRequest, ComplianceReportResponse, FixSuggestion, ValidationResult, RecommendationDetail
+from ..scoring import ScoringEngine
+from ..recommendation import RecommendationEngine
 from ..services.parser_service import ParserService
-from ..checkers.anonymity_checker import AnonymityChecker
-from ..checkers.page_limit_checker import PageLimitChecker
-from ..checkers.reference_checker import ReferenceChecker
-from ..checkers.citation_checker import CitationChecker
-from ..checkers.claims_checker import ClaimsChecker
-from ..core import get_logger, NotFoundError
+from ..cache.parsed_document_cache import ParsedDocumentCache
+from ..conference import config_loader
+from ..validators import BlindReviewValidator, StructureValidator, ResearchIntegrityValidator
+from ..core import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1/compliance", tags=["compliance"])
@@ -126,83 +127,101 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
                 detail="Paper file not found"
             )
         
-        parser_service = ParserService()
-        parsed_paper = parser_service.parse(storage_path, file_type)
+        parsed_doc_cache = ParsedDocumentCache()
+        parsed_paper = await parsed_doc_cache.get(paper_id, db)
+        if parsed_paper is not None:
+            logger.info(f"Cache HIT: paper={paper_id} (compliance analysis)")
+        else:
+            logger.info(f"Cache MISS: paper={paper_id} — parsing and repopulating (compliance analysis)")
+            parser_service = ParserService()
+            parsed_paper = parser_service.parse(storage_path, file_type, paper_id)
+            await parsed_doc_cache.set(paper_id, parsed_paper, db)
+            logger.info(f"Cache REFRESH: paper={paper_id} (compliance analysis)")
 
-        try:
-            guidelines = await ConferenceService(db).get_guidelines(request.conference_id)
-        except NotFoundError:
+        config = config_loader.load(request.conference_id)
+        if config is None:
             raise HTTPException(
                 status_code=404,
-                detail=f"Guidelines not found for conference: {request.conference_id}"
+                detail=f"Conference config not found: {request.conference_id}"
             )
-        guidelines_dict = guidelines.model_dump()
-        
-        extracted_text = parsed_paper.get("extracted_text", "")
-        issues = []
+        guidelines_dict = config.to_guidelines_dict()
+
+        # Run all validators in parallel
+        blind_validator = BlindReviewValidator()
+        structure_validator = StructureValidator()
+        integrity_validator = ResearchIntegrityValidator()
+
+        blind_result, structure_result, integrity_result = await asyncio.gather(
+            blind_validator.validate(parsed_paper, guidelines_dict),
+            structure_validator.validate(parsed_paper, guidelines_dict),
+            integrity_validator.validate(parsed_paper, guidelines_dict),
+        )
+
+        all_results: List[ValidationResult] = []
+        all_results.extend(blind_result)
+        all_results.extend(structure_result)
+        all_results.extend(integrity_result)
+
+        # Convert ValidationResult to the dict format expected by the API
+        issues = [r.to_issue_dict() for r in all_results]
+
+        # Compute passed_checks: categories with zero issues
+        category_counts: dict = {}
+        for r in all_results:
+            category_counts[r.category] = category_counts.get(r.category, 0) + 1
+
         passed_checks = []
-        
-        if guidelines_dict.get("requires_anonymity", False):
-            anonymity_checker = AnonymityChecker()
-            anon_issues = anonymity_checker.check(extracted_text, parsed_paper)
-            issues.extend(anon_issues)
-            if not anon_issues:
-                passed_checks.append("anonymity")
-        else:
+        expected_categories = [
+            "anonymity",
+            "page_limit",
+            "missing_section",
+            "template",
+            "margin",
+            "references",
+            "citations",
+            "claims_integrity",
+        ]
+        if not guidelines_dict.get("requires_anonymity", False):
             passed_checks.append("anonymity")
-        
-        page_checker = PageLimitChecker()
-        page_issues = page_checker.check(parsed_paper, guidelines_dict)
-        issues.extend(page_issues)
-        if not page_issues:
-            passed_checks.append("page_limit")
-        
-        ref_checker = ReferenceChecker()
-        ref_issues = ref_checker.check(parsed_paper, guidelines_dict)
-        issues.extend(ref_issues)
-        if not ref_issues:
-            passed_checks.append("references")
-        
-        citation_checker = CitationChecker()
-        citation_issues = citation_checker.check(extracted_text, parsed_paper)
-        issues.extend(citation_issues)
-        if not citation_issues:
-            passed_checks.append("citations")
-        
-        claims_checker = ClaimsChecker()
-        claims_issues = claims_checker.check(extracted_text, parsed_paper)
-        issues.extend(claims_issues)
-        if not claims_issues:
-            passed_checks.append("claims_integrity")
-        
-        critical_count = sum(1 for i in issues if i.get("severity") == "critical")
-        warnings_count = sum(1 for i in issues if i.get("severity") == "warning")
-        info_count = sum(1 for i in issues if i.get("severity") == "info")
-        
-        readiness_score = calculate_readiness_score(issues)
-        overall_status = get_status_from_score(readiness_score, critical_count)
-        
+        for cat in expected_categories:
+            if cat == "anonymity" and not guidelines_dict.get("requires_anonymity", False):
+                continue
+            if cat not in category_counts:
+                passed_checks.append(cat)
+
+        # Score with ScoringEngine
+        scoring_engine = ScoringEngine()
+        score_result = scoring_engine.compute(all_results)
+
+        # Generate recommendations
+        rec_engine = RecommendationEngine()
+        recommendations = rec_engine.generate(all_results, parsed_paper, guidelines_dict)
+
+        readiness_score = score_result.score
+        overall_status = score_result.status
+
         response = ComplianceReportResponse(
             project_id=request.paper_id,
             paper_id=paper_id,
             conference_id=request.conference_id,
             overall_status=overall_status,
             readiness_score=readiness_score,
-            issues=[
-                {
-                    "issue_id": i.get("issue_id"),
-                    "category": i.get("category"),
-                    "severity": i.get("severity"),
-                    "message": i.get("message"),
-                    "location": i.get("location"),
-                    "suggested_fix": i.get("suggested_fix"),
-                    "needs_verification": i.get("needs_verification", False),
-                }
-                for i in issues
-            ],
+            issues=issues,
             passed_checks=passed_checks,
-            warnings_count=warnings_count,
-            critical_count=critical_count,
+            warnings_count=score_result.warnings_count,
+            critical_count=score_result.critical_count,
+            recommendations=[
+                RecommendationDetail(
+                    issue=rec.issue or rec.suggested_action,
+                    location=rec.location or rec.category,
+                    severity=rec.severity or "warning",
+                    suggested_action=rec.suggested_action,
+                    explanation=rec.explanation,
+                    category=rec.category,
+                    can_auto_fix=rec.can_auto_fix,
+                )
+                for rec in recommendations
+            ],
         )
 
         COMPLIANCE_REPORT_STORAGE[paper_id] = response.model_dump()

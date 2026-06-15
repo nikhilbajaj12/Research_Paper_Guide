@@ -6,24 +6,29 @@ import { Badge } from '@/components/common/Badge';
 interface ConferenceCardProps {
   abbr: string;
   name: string;
+  year?: number;
   isAvailable: boolean;
   isSelected?: boolean;
   onClick?: () => void;
+  maxPages?: number;
+  blindReview?: boolean;
+  referenceStyle?: string;
 }
 
-const conferenceMeta: Record<string, { icon: string; guidelines: string[] }> = {
-  NeurIPS: {
-    icon: 'N',
-    guidelines: ['Anonymous review required', 'Main page limit: 9 pages', 'Official LaTeX template required', 'OpenReview submission'],
-  },
-  CVPR: { icon: 'C', guidelines: ['Coming in 2026'] },
-  ICML: { icon: 'I', guidelines: ['Coming in 2026'] },
-  ACL: { icon: 'A', guidelines: ['Coming in 2026'] },
-  EMNLP: { icon: 'E', guidelines: ['Coming in 2026'] },
-};
+export const ConferenceCard: React.FC<ConferenceCardProps> = ({
+  abbr, name, year, isAvailable, isSelected, onClick,
+  maxPages, blindReview, referenceStyle,
+}) => {
+  const iconLetter = abbr[0] || '?';
 
-export const ConferenceCard: React.FC<ConferenceCardProps> = ({ abbr, name, isAvailable, isSelected, onClick }) => {
-  const meta = conferenceMeta[abbr] || { icon: abbr[0], guidelines: [] };
+  const guidelines: string[] = [];
+  if (isAvailable) {
+    if (maxPages) guidelines.push(`Max pages: ${maxPages}`);
+    if (blindReview !== undefined) guidelines.push(blindReview ? 'Anonymous review required' : 'Non-anonymous');
+    if (referenceStyle) guidelines.push(`Reference style: ${referenceStyle}`);
+  } else {
+    guidelines.push('Coming in 2026');
+  }
 
   return (
     <div
@@ -49,11 +54,11 @@ export const ConferenceCard: React.FC<ConferenceCardProps> = ({ abbr, name, isAv
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${
               isAvailable ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'
             }`}>
-              {meta.icon}
+              {iconLetter}
             </div>
             <div>
               <h3 className="font-bold text-slate-900">{abbr}</h3>
-              <p className="text-xs text-slate-500">{name}</p>
+              <p className="text-xs text-slate-500">{name}{year ? ` ${year}` : ''}</p>
             </div>
           </div>
           <Badge
@@ -63,7 +68,7 @@ export const ConferenceCard: React.FC<ConferenceCardProps> = ({ abbr, name, isAv
         </div>
 
         <div className="space-y-1.5 mb-4">
-          {meta.guidelines.map((g, i) => (
+          {guidelines.map((g, i) => (
             <p key={i} className={`text-xs flex items-start gap-1.5 ${
               isAvailable ? 'text-slate-600' : 'text-slate-400'
             }`}>

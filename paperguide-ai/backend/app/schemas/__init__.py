@@ -1,7 +1,9 @@
 """Pydantic schemas for the API."""
 
+import base64
 from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from enum import Enum
 
@@ -277,6 +279,18 @@ class ComplianceIssueDetail(BaseModel):
     needs_verification: bool
 
 
+class RecommendationDetail(BaseModel):
+    """Actionable recommendation for fixing a compliance issue."""
+
+    issue: str
+    location: str
+    severity: str
+    suggested_action: str
+    explanation: str
+    category: str = ""
+    can_auto_fix: bool = False
+
+
 class ComplianceReportResponse(BaseModel):
     """Compliance analysis report response."""
 
@@ -289,6 +303,7 @@ class ComplianceReportResponse(BaseModel):
     passed_checks: List[str] = Field(default_factory=list)
     warnings_count: int
     critical_count: int
+    recommendations: List[RecommendationDetail] = Field(default_factory=list)
 
 
 # ============ Phase 4: Compliance Report & Package Generation Schemas ============
@@ -357,3 +372,155 @@ class PackageGenerationResponse(BaseModel):
     generated_files: List[GeneratedFile] = Field(default_factory=list)
     status: str
     message: str
+
+
+# ============ Architecture V2 Dataclasses ============
+
+@dataclass
+class ParsedDocument:
+    """Standardized parsed document reused across all stages."""
+
+    paper_id: str
+    file_type: str
+    title: Optional[str] = None
+    abstract: Optional[str] = None
+    authors: List[str] = field(default_factory=list)
+    sections: List[str] = field(default_factory=list)
+    page_count: Optional[int] = None
+    references_found: bool = False
+    citation_patterns_found: bool = False
+    citation_patterns: List[str] = field(default_factory=list)
+    numeric_claims: List[Dict[str, Any]] = field(default_factory=list)
+    extracted_text: Optional[str] = None
+    source_files: Dict[str, bytes] = field(default_factory=dict)
+    main_tex_content: Optional[str] = None
+    bib_files: List[str] = field(default_factory=list)
+    sty_files: List[str] = field(default_factory=list)
+    abstract_found: bool = False
+    has_checklist: bool = False
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    error: Optional[str] = None
+
+    def __getitem__(self, key: str) -> Any:
+        """Allow dict-style access for backward compat with existing checkers."""
+        return getattr(self, key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Dict-style .get() for backward compat."""
+        return getattr(self, key, default)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize to dict for cache storage."""
+        result = {}
+        for k, v in self.__dict__.items():
+            if k == "source_files":
+                result[k] = {name: base64.b64encode(content).decode() for name, content in v.items()}
+            else:
+                result[k] = v
+        return result
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ParsedDocument":
+        """Deserialize from dict."""
+        data = dict(data)
+        if "source_files" in data and data["source_files"]:
+            data["source_files"] = {
+                name: base64.b64decode(content.encode()) if isinstance(content, str) else content
+                for name, content in data["source_files"].items()
+            }
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+@dataclass
+class ValidationResult:
+    """Result from a single validation check."""
+
+    status: str  # "pass" | "warning" | "critical"
+    issue: str
+    location: str
+    recommendation: str
+    category: str
+    needs_verification: bool = False
+
+    def to_issue_dict(self) -> Dict[str, Any]:
+        """Convert to the ComplianceIssueDetail format expected by the API."""
+        return {
+            "issue_id": f"{self.category}_{hash(self.issue) & 0xFFFF}",
+            "category": self.category,
+            "severity": self.status,
+            "message": self.issue,
+            "location": self.location,
+            "suggested_fix": self.recommendation,
+            "needs_verification": self.needs_verification,
+        }
+
+
+@dataclass
+class ScoreResult:
+    """Result from the scoring engine."""
+
+    score: int
+    status: str
+    critical_count: int = 0
+    warnings_count: int = 0
+    info_count: int = 0
+
+
+@dataclass
+class Recommendation:
+    """Actionable recommendation for fixing an issue."""
+
+    issue_id: str
+    category: str
+    can_auto_fix: bool
+    suggested_action: str
+    issue: str = ""
+    location: str = ""
+    severity: str = ""
+    replacement_text: Optional[str] = None
+    explanation: str = ""
+
+
+@dataclass
+class ConferenceConfig:
+    """Conference configuration loaded from JSON files."""
+
+    conference_id: str
+    conference_name: str
+    conference_year: int = 2026
+    max_pages: int = 9
+    min_pages: int = 1
+    blind_review: bool = True
+    reference_style: str = "bibtex"
+    required_sections: List[str] = field(default_factory=list)
+    optional_sections: List[str] = field(default_factory=list)
+    required_keywords: List[str] = field(default_factory=list)
+    margin_rules: Dict[str, float] = field(default_factory=lambda: {"top_cm": 2.54, "bottom_cm": 2.54, "left_cm": 2.54, "right_cm": 2.54})
+    package_template: str = ""
+    scoring_weights: Dict[str, int] = field(default_factory=lambda: {"critical": 20, "warning": 8, "info": 2})
+    allowed_file_types: List[str] = field(default_factory=lambda: [".pdf", ".docx", ".zip"])
+    forbidden_topics: List[str] = field(default_factory=list)
+    special_rules: List[str] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ConferenceConfig":
+        """Create from dict (JSON config file)."""
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+    def to_guidelines_dict(self) -> Dict[str, Any]:
+        """Return a flat dict compatible with existing validators (guidelines format)."""
+        return {
+            "conference_id": self.conference_id,
+            "max_pages": self.max_pages,
+            "min_pages": self.min_pages,
+            "requires_anonymity": self.blind_review,
+            "reference_format": self.reference_style,
+            "required_sections": list(self.required_sections),
+            "margin_top_cm": self.margin_rules.get("top_cm", 2.54),
+            "margin_bottom_cm": self.margin_rules.get("bottom_cm", 2.54),
+            "margin_left_cm": self.margin_rules.get("left_cm", 2.54),
+            "margin_right_cm": self.margin_rules.get("right_cm", 2.54),
+            "forbidden_topics": list(self.forbidden_topics),
+            "special_rules": list(self.special_rules),
+            "package_template": self.package_template,
+        }

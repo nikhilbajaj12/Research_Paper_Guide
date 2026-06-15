@@ -8,6 +8,7 @@ import { Badge } from '@/components/common/Badge';
 import { Card } from '@/components/common/Card';
 import { Loader } from '@/components/common/Loader';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
+import { RecommendationsPanel } from '@/components/report/RecommendationsPanel';
 import { complianceApi } from '@/services/complianceApi';
 import { ROUTES } from '@/constants/routes';
 import { ComplianceReport } from '@/types/compliance';
@@ -175,6 +176,10 @@ export default function ReportPage() {
             )}
           </div>
         </div>
+
+        {report.recommendations && report.recommendations.length > 0 && (
+          <RecommendationsPanel recommendations={report.recommendations} />
+        )}
 
         <div className="flex gap-3">
           <Button onClick={() => router.push(ROUTES.PACKAGES)}>

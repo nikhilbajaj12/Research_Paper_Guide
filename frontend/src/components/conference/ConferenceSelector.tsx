@@ -9,9 +9,10 @@ interface ConferenceSelectorProps {
   conferences: Conference[];
   selectedId?: string | null;
   onSelect: (conference: Conference) => void;
+  configMap?: Record<string, { conference_name: string; conference_year: number; max_pages: number; blind_review: boolean; reference_style: string }>;
 }
 
-export const ConferenceSelector: React.FC<ConferenceSelectorProps> = ({ conferences, selectedId, onSelect }) => {
+export const ConferenceSelector: React.FC<ConferenceSelectorProps> = ({ conferences, selectedId, onSelect, configMap }) => {
   return (
     <Card>
       <div className="flex items-center justify-between mb-5">
@@ -21,16 +22,23 @@ export const ConferenceSelector: React.FC<ConferenceSelectorProps> = ({ conferen
         )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {conferences.map((conf) => (
-          <ConferenceCard
-            key={conf.id}
-            abbr={conf.abbr}
-            name={conf.name}
-            isAvailable={conf.id === 'neurips-2025'}
-            isSelected={selectedId === conf.id}
-            onClick={() => onSelect(conf)}
-          />
-        ))}
+        {conferences.map((conf) => {
+          const cfgData = configMap?.[conf.id];
+          return (
+            <ConferenceCard
+              key={conf.id}
+              abbr={conf.abbr}
+              name={conf.name}
+              year={cfgData?.conference_year}
+              isAvailable={!!cfgData}
+              isSelected={selectedId === conf.id}
+              onClick={() => onSelect(conf)}
+              maxPages={cfgData?.max_pages}
+              blindReview={cfgData?.blind_review}
+              referenceStyle={cfgData?.reference_style}
+            />
+          );
+        })}
       </div>
     </Card>
   );

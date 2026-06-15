@@ -12,6 +12,8 @@ from ..routes.compliance import (
     COMPLIANCE_REPORT_STORAGE,
 )
 from ..services.parser_service import ParserService
+from ..cache.parsed_document_cache import ParsedDocumentCache
+from ..conference import config_loader
 from ..core import get_logger
 
 logger = get_logger(__name__)
@@ -47,9 +49,22 @@ async def generate_package(
                 detail="Paper file not found"
             )
         
-        parser_service = ParserService()
-        parsed_paper = parser_service.parse(storage_path, file_type)
-        
+        parsed_doc_cache = ParsedDocumentCache()
+        parsed_paper = await parsed_doc_cache.get(paper_id, db)
+        if parsed_paper is not None:
+            logger.info(f"Cache HIT: paper={paper_id} (package generation)")
+        else:
+            logger.info(f"Cache MISS: paper={paper_id} — parsing and repopulating (package generation)")
+            parser_service = ParserService()
+            parsed_paper = parser_service.parse(storage_path, file_type, paper_id)
+            await parsed_doc_cache.set(paper_id, parsed_paper, db)
+            logger.info(f"Cache REFRESH: paper={paper_id} (package generation)")
+
+        config = config_loader.load(request.conference_id)
+        if config is None:
+            logger.warning(f"Conference config not found: {request.conference_id} — using defaults")
+        conference_config_dict = config.to_guidelines_dict() if config else {}
+
         compliance_report = COMPLIANCE_REPORT_STORAGE.get(paper_id)
         if not compliance_report:
             raise HTTPException(
@@ -67,8 +82,9 @@ async def generate_package(
             conference_id=request.conference_id,
             parsed_paper=parsed_paper,
             compliance_report=compliance_report,
+            conference_config=conference_config_dict,
             project_id=request.project_id,
-            package_type=request.package_type
+            package_type=request.package_type,
         )
         
         return PackageGenerationResponse(

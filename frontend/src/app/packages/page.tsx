@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button } from '@/components/common/Button';
+import { Badge } from '@/components/common/Badge';
 import { Card } from '@/components/common/Card';
 import { Loader } from '@/components/common/Loader';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
@@ -11,13 +12,16 @@ import { packageApi } from '@/services/packageApi';
 import { ROUTES } from '@/constants/routes';
 import { Package } from '@/types/package';
 
-function getConferenceId(): string {
-  if (typeof window === 'undefined') return 'neurips-2025';
+function getConferenceData(): { id: string; name: string; year?: number } {
+  if (typeof window === 'undefined') return { id: 'neurips-2025', name: 'NeurIPS' };
   const stored = localStorage.getItem('selectedConference');
   if (stored) {
-    try { return JSON.parse(stored).id || 'neurips-2025'; } catch { return 'neurips-2025'; }
+    try {
+      const data = JSON.parse(stored);
+      return { id: data.id || 'neurips-2025', name: data.name || 'NeurIPS', year: data.start_date ? parseInt(data.start_date.slice(0, 4)) : 2026 };
+    } catch { return { id: 'neurips-2025', name: 'NeurIPS' }; }
   }
-  return 'neurips-2025';
+  return { id: 'neurips-2025', name: 'NeurIPS' };
 }
 
 export default function PackagesPage() {
@@ -25,6 +29,7 @@ export default function PackagesPage() {
   const [pkg, setPkg] = useState<Package | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const conference = getConferenceData();
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -36,7 +41,7 @@ export default function PackagesPage() {
         return;
       }
       const { paper_id } = JSON.parse(paperData);
-      const result = await packageApi.generatePackage(paper_id, getConferenceId());
+      const result = await packageApi.generatePackage(paper_id, conference.id);
       setPkg(result);
       localStorage.setItem('generatedPackage', JSON.stringify(result));
     } catch (err: any) {
@@ -73,18 +78,25 @@ export default function PackagesPage() {
 
         {!pkg ? (
           <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 mb-1">Generate Overleaf Package</h2>
-                <p className="text-sm text-slate-500">
-                  Generate an Overleaf-ready LaTeX package with main.tex, references.bib, and compliance report.
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900 mb-1">Generate Overleaf Package</h2>
+                  <p className="text-sm text-slate-500">
+                    Generate an Overleaf-ready LaTeX package with main.tex, references.bib, and compliance report.
+                  </p>
+                </div>
+                <Button onClick={handleGenerate} disabled={loading}>
+                  {loading ? <Loader /> : 'Generate Package'}
+                </Button>
               </div>
-              <Button onClick={handleGenerate} disabled={loading}>
-                {loading ? <Loader /> : 'Generate Package'}
-              </Button>
+              <div className="flex items-center gap-2 text-sm text-slate-500">
+                <span className="font-medium text-slate-700">Conference:</span>
+                <Badge text={`${conference.name}${conference.year ? ` ${conference.year}` : ''}`} variant="info" />
+                <span className="text-xs text-slate-400 ml-2">Conference-aware template will be applied</span>
+              </div>
+              {error && <div className="mt-4"><ErrorMessage message={error} /></div>}
             </div>
-            {error && <div className="mt-4"><ErrorMessage message={error} /></div>}
           </Card>
         ) : (
           <div className="space-y-6">
@@ -95,7 +107,10 @@ export default function PackagesPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="font-semibold text-emerald-800">Package generated successfully!</p>
+                <div>
+                  <p className="font-semibold text-emerald-800">Package generated successfully!</p>
+                  <p className="text-sm text-emerald-600">Generated for {conference.name}{conference.year ? ` ${conference.year}` : ''}</p>
+                </div>
               </div>
             </Card>
 
@@ -120,7 +135,7 @@ export default function PackagesPage() {
                 {[
                   'Download the ZIP package below',
                   'Upload ZIP to Overleaf',
-                  'Ensure neurips_2026.sty exists in project',
+                  'Ensure the conference .sty file exists in project',
                   'Set main.tex as main file',
                   'Recompile from scratch if references don\'t appear',
                   'Review and submit to conference',

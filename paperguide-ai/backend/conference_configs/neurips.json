@@ -1,0 +1,31 @@
+{
+  "conference_name": "NeurIPS",
+  "conference_year": 2026,
+  "max_pages": 9,
+  "min_pages": 1,
+  "blind_review": true,
+  "reference_style": "bibtex",
+  "required_sections": [
+    "abstract",
+    "introduction",
+    "methodology",
+    "results"
+  ],
+  "optional_sections": [
+    "appendix",
+    "broader impact"
+  ],
+  "required_keywords": [],
+  "margin_rules": {
+    "top_cm": 2.5,
+    "bottom_cm": 2.5,
+    "left_cm": 2.5,
+    "right_cm": 2.5
+  },
+  "package_template": "neurips",
+  "scoring_weights": {
+    "critical": 20,
+    "warning": 8,
+    "info": 2
+  }
+}
