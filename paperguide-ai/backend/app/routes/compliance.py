@@ -7,18 +7,20 @@ from sqlalchemy.orm import Session
 from fastapi import Depends
 from ..database import get_db
 from ..schemas import ComplianceAnalyzeRequest, ComplianceReportResponse, FixSuggestion
+from ..services.conference_service import ConferenceService
 from ..services.parser_service import ParserService
 from ..checkers.anonymity_checker import AnonymityChecker
 from ..checkers.page_limit_checker import PageLimitChecker
 from ..checkers.reference_checker import ReferenceChecker
 from ..checkers.citation_checker import CitationChecker
 from ..checkers.claims_checker import ClaimsChecker
-from ..core import get_logger
+from ..core import get_logger, NotFoundError
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1/compliance", tags=["compliance"])
 
 PAPER_STORAGE = {}
+COMPLIANCE_REPORT_STORAGE = {}
 
 
 def calculate_readiness_score(issues: list) -> int:
@@ -126,20 +128,27 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
         
         parser_service = ParserService()
         parsed_paper = parser_service.parse(storage_path, file_type)
-        
-        guidelines_dict = {
-            "max_pages": 9,
-            "requires_anonymity": True,
-        }
+
+        try:
+            guidelines = await ConferenceService(db).get_guidelines(request.conference_id)
+        except NotFoundError:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Guidelines not found for conference: {request.conference_id}"
+            )
+        guidelines_dict = guidelines.model_dump()
         
         extracted_text = parsed_paper.get("extracted_text", "")
         issues = []
         passed_checks = []
         
-        anonymity_checker = AnonymityChecker()
-        anon_issues = anonymity_checker.check(extracted_text, parsed_paper)
-        issues.extend(anon_issues)
-        if not anon_issues:
+        if guidelines_dict.get("requires_anonymity", False):
+            anonymity_checker = AnonymityChecker()
+            anon_issues = anonymity_checker.check(extracted_text, parsed_paper)
+            issues.extend(anon_issues)
+            if not anon_issues:
+                passed_checks.append("anonymity")
+        else:
             passed_checks.append("anonymity")
         
         page_checker = PageLimitChecker()
@@ -173,9 +182,7 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
         readiness_score = calculate_readiness_score(issues)
         overall_status = get_status_from_score(readiness_score, critical_count)
         
-        fix_suggestions = generate_fix_suggestions(issues)
-        
-        return ComplianceReportResponse(
+        response = ComplianceReportResponse(
             project_id=request.paper_id,
             paper_id=paper_id,
             conference_id=request.conference_id,
@@ -197,6 +204,9 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
             warnings_count=warnings_count,
             critical_count=critical_count,
         )
+
+        COMPLIANCE_REPORT_STORAGE[paper_id] = response.model_dump()
+        return response
     
     except HTTPException:
         raise

@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy.orm import Session
 from ..models import Conference as ConferenceModel, ConferenceGuidelines as GuidelinesModel
+from ..schemas import ConferenceType
 from ..core import get_logger
 
 logger = get_logger(__name__)
@@ -39,13 +40,27 @@ def load_conferences_from_json(db: Session, json_file_path: str = None) -> int:
         conferences = data if isinstance(data, list) else data.get('conferences', [])
         
         loaded = 0
+        updated = 0
+        valid_conference_types = {conference_type.value for conference_type in ConferenceType}
+
         for conf_data in conferences:
+            conference_type = conf_data.get('conference_type') or conf_data.get('type')
+            if conference_type not in valid_conference_types:
+                logger.warning(
+                    f"Skipping conference {conf_data.get('id')}: "
+                    f"invalid conference_type '{conference_type}'"
+                )
+                continue
+
             # Check if conference already exists
             existing = db.query(ConferenceModel).filter(
                 ConferenceModel.id == conf_data.get('id')
             ).first()
             
             if existing:
+                if existing.conference_type != conference_type:
+                    existing.conference_type = conference_type
+                    updated += 1
                 logger.info(f"Conference already exists: {conf_data.get('id')}")
                 continue
             
@@ -58,7 +73,7 @@ def load_conferences_from_json(db: Session, json_file_path: str = None) -> int:
                 submission_deadline=conf_data.get('submission_deadline'),
                 location=conf_data.get('location'),
                 flag=conf_data.get('flag'),
-                conference_type=conf_data.get('conference_type', 'workshop'),
+                conference_type=conference_type,
                 topics=conf_data.get('topics', []),
                 description=conf_data.get('description'),
                 url=conf_data.get('url'),
@@ -70,9 +85,9 @@ def load_conferences_from_json(db: Session, json_file_path: str = None) -> int:
             loaded += 1
             logger.info(f"Loaded conference: {conf_data.get('id')}")
         
-        if loaded > 0:
+        if loaded > 0 or updated > 0:
             db.commit()
-            logger.info(f"Committed {loaded} conferences to database")
+            logger.info(f"Committed {loaded} new and {updated} updated conferences to database")
         
         return loaded
         

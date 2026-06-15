@@ -1,6 +1,7 @@
 """DOCX parser for extracting text and structure."""
 
 import re
+from pathlib import Path
 from typing import Dict, List
 from ..core import get_logger
 
@@ -41,10 +42,14 @@ class DOCXParser:
             
             return {
                 "page_count": None,
-                "extracted_text": text[:5000],
+                "extracted_text": text,
                 "sections": sections,
                 "abstract_found": self._find_abstract(text),
                 "references_found": self._find_references(text),
+                "source_type": "docx",
+                "source_files": {
+                    "original_paper.docx": Path(file_path).read_bytes(),
+                },
             }
         except Exception as e:
             logger.error(f"Error parsing DOCX: {str(e)}")

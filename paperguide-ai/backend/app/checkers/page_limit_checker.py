@@ -14,8 +14,8 @@ class PageLimitChecker:
         logger.info(f"Checking page limit: paper_pages={parsed_paper.get('page_count')}, max={guidelines.get('max_pages')}")
         issues = []
         
-        page_count = parsed_paper.get('page_count', 0)
-        max_pages = guidelines.get('max_pages', 9)
+        page_count = parsed_paper.get('page_count', 0) or 0
+        max_pages = guidelines.get('max_pages', 9) or 9
         
         if page_count > max_pages:
             issues.append({

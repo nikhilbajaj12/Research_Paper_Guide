@@ -1,0 +1,10 @@
+name: filesystem
+version: 0.0.1
+schema: v1
+mcpServers:
+  filesystem:
+    command: npx
+    args:
+      - -y
+      - @modelcontextprotocol/server-filesystem
+      - C:\Users\NB125520\Downloads\Research_Paper_POC
