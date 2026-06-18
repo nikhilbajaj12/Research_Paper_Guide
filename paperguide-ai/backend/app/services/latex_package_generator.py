@@ -24,10 +24,16 @@ class LatexPackageGenerator:
         logger.info("Generating main.tex")
 
         main_tex_content = parsed_paper.get('main_tex_content')
-        if main_tex_content:
+        # Only return existing content if it's not a placeholder
+        if main_tex_content and len(main_tex_content) > 100:
             return main_tex_content
 
-        template = (conference_config or {}).get("package_template", "")
+        conf_data = conference_config or {}
+        # Extract template prefix (e.g., 'icml' from 'icml-2025')
+        template = conf_data.get("package_template") or (conf_data.get("conference_id", "default").split('-')[0])
+        # Get year from config or default
+        conf_year = str(conf_data.get("conference_year") or conf_data.get("year") or "2026")
+        
         conference_id = (conference_config or {}).get("conference_id", template)
 
         title = TemplateEngine.escape_latex(
@@ -56,8 +62,8 @@ class LatexPackageGenerator:
             "body": body,
             "bibliography_section": bibliography_section,
             "citation_note": citation_note,
-            "style_file": f"{template}_2026" if template else "conference_2026",
-            "conference_name": (conference_config or {}).get("conference_name", "Conference"),
+            "style_file": f"{template}_{conf_year}" if template else f"conference_{conf_year}",
+            "conference_name": conf_data.get("conference_name", "Target Conference"),
         }
 
         if template:
@@ -76,15 +82,16 @@ class LatexPackageGenerator:
             logger.warning("No default template found, using hardcoded fallback")
 
         return self._generate_fallback_main_tex(
-            title, abstract, body, has_citations, has_references, template
+            title, abstract, body, has_citations, has_references, template, conf_year
         )
 
     def _generate_fallback_main_tex(
         self, title: str, abstract: str, body: str,
-        has_citations: bool, has_references: bool, template: str
+        has_citations: bool, has_references: bool, template: str, 
+        year: str
     ) -> str:
         """Hardcoded fallback if no template files exist."""
-        style_package = f"\\usepackage{{{template}_2026}}" if template else ""
+        style_package = f"\\usepackage{{{template}_{year}}}" if template and year else ""
 
         tex_content = rf"""\documentclass{{article}}
 
@@ -163,15 +170,18 @@ class LatexPackageGenerator:
         """Generate Overleaf instructions README using conference-aware templates."""
         logger.info("Generating README_OVERLEAF_INSTRUCTIONS.md")
 
-        template = (conference_config or {}).get("package_template", "")
-        conference_id = (conference_config or {}).get("conference_id", template)
+        conf_data = conference_config or {}
+        template = conf_data.get("package_template") or (conf_data.get("conference_id", "default").split('-')[0])
+        conf_year = str(conf_data.get("conference_year") or conf_data.get("year") or "2026")
+        
+        conference_id = conf_data.get("conference_id", template)
 
-        style_file = f"{template}_2026" if template else "conference_2026"
-        conference_name = (conference_config or {}).get("conference_name", "Conference")
+        style_file = f"{template}_{conf_year}" if template else f"conference_{conf_year}"
+        conference_name = conf_data.get("conference_name", "Conference")
 
-        page_limit = str((conference_config or {}).get("max_pages", "N/A"))
-        reference_style = (conference_config or {}).get("reference_format", "bibtex")
-        blind_review = "Yes" if (conference_config or {}).get("requires_anonymity", True) else "No"
+        page_limit = str(conf_data.get("max_pages", "N/A"))
+        reference_style = conf_data.get("reference_format", "bibtex")
+        blind_review = "Yes" if conf_data.get("requires_anonymity", True) else "No"
 
         compliance_data = compliance_data or {}
         compliance_score = str(compliance_data.get("readiness_score", "N/A"))
@@ -180,11 +190,11 @@ class LatexPackageGenerator:
         warnings_count = str(compliance_data.get("warnings_count", "N/A"))
 
         template_urls = {
-            "neurips": "https://neurips.cc/Conferences/2026/PaperInformation/StyleFiles",
-            "icml": "https://icml.cc/Conferences/2026/StyleFiles",
+            "neurips": f"https://neurips.cc/Conferences/{conf_year}/PaperInformation/StyleFiles",
+            "icml": f"https://icml.cc/Conferences/{conf_year}/StyleFiles",
             "acl": "https://acl-org.github.io/ACL-style-files/",
-            "cvpr": "https://cvpr.thecvf.com/Conferences/2026/AuthorGuidelines",
-            "emnlp": "https://2026.emnlp.org/call-for-papers/",
+            "cvpr": f"https://cvpr.thecvf.com/Conferences/{conf_year}/AuthorGuidelines",
+            "emnlp": f"https://{conf_year}.emnlp.org/call-for-papers/",
         }
         template_url = template_urls.get(template, f"https://{conference_id}.cc/")
 
@@ -217,12 +227,16 @@ class LatexPackageGenerator:
         except FileNotFoundError:
             logger.warning("No default README template found, using hardcoded fallback")
 
-        return self._generate_fallback_readme()
+        return self._generate_fallback_readme(
+            conference_name, 
+            style_file, 
+            template_url
+        )
 
     @staticmethod
-    def _generate_fallback_readme() -> str:
+    def _generate_fallback_readme(conf_name: str, style_file: str, template_url: str) -> str:
         """Hardcoded fallback README if no template files exist."""
-        return """# Overleaf LaTeX Package Instructions
+        return f"""# Overleaf LaTeX Package Instructions for {conf_name}
 
 ## Setup
 
@@ -231,11 +245,12 @@ class LatexPackageGenerator:
    - Create new project from uploaded ZIP
 
 2. **Verify Template**:
-   - Ensure the conference `.sty` file exists in project root
-   - If missing, upload or install manually
+   - Ensure the style file `{style_file}.sty` exists in project root
+   - If missing, download it from: {template_url}
 
 3. **Set Main File**:
-   - In Overleaf menu, set `main.tex` as main file
+   - In the Overleaf menu, set `main.tex` as the main file
+   - Ensure your LaTeX engine is set to pdfLaTeX (default)
 
 4. **Add References**:
    - Edit `references.bib` with your BibTeX entries
@@ -250,7 +265,7 @@ class LatexPackageGenerator:
 
 2. If compilation fails:
    - Check `main.tex` for syntax errors
-   - Verify all `\\cite{}` commands have matching entries in `references.bib`
+   - Verify all `\\cite{{}}` commands have matching entries in `references.bib`
    - Check character encoding (UTF-8)
 
 ## Compliance

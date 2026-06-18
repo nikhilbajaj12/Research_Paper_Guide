@@ -75,9 +75,10 @@ class StructureValidator(BaseValidator):
     def _check_template(self, parsed_doc: ParsedDocument, guidelines: dict) -> List[ValidationResult]:
         results = []
         main_tex = parsed_doc.main_tex_content
+        source_type = getattr(parsed_doc, "file_type", None) or getattr(parsed_doc, "source_type", None)
 
         if not main_tex:
-            if parsed_doc.source_type == "latex":
+            if source_type == "latex" or source_type == "zip":
                 results.append(ValidationResult(
                     status="warning",
                     issue="No main .tex content found; cannot verify template compliance.",

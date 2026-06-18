@@ -74,7 +74,7 @@ class ConferenceConfigLoader:
             return None
 
     def list_available(self) -> List[Dict[str, Any]]:
-        """List all available conference configs (id + name)."""
+        """List all available conference configs with full details."""
         available = []
         if not os.path.isdir(self._config_dir):
             logger.warning(f"Config directory not found: {self._config_dir}")
@@ -89,6 +89,14 @@ class ConferenceConfigLoader:
                         "conference_id": conf_id,
                         "conference_name": config.conference_name,
                         "conference_year": config.conference_year,
+                        "max_pages": config.max_pages,
+                        "min_pages": config.min_pages,
+                        "blind_review": config.blind_review,
+                        "reference_style": config.reference_style,
+                        "required_sections": config.required_sections,
+                        "optional_sections": config.optional_sections,
+                        "package_template": config.package_template,
+                        "margin_rules": config.margin_rules,
                     })
         return available
 

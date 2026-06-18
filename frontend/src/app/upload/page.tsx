@@ -17,15 +17,15 @@ import { isValidFileType, isValidFileSize } from '@/utils/validators';
 const DEFAULT_CONFERENCE = 'neurips-2025';
 
 function getConferenceInfo(): { id: string; name: string } {
-  if (typeof window === 'undefined') return { id: DEFAULT_CONFERENCE, name: 'NeurIPS 2026' };
+  if (typeof window === 'undefined') return { id: DEFAULT_CONFERENCE, name: 'Selected Conference' };
   const stored = localStorage.getItem('selectedConference');
   if (stored) {
     try {
       const data = JSON.parse(stored);
-      return { id: data.id || DEFAULT_CONFERENCE, name: data.name || 'NeurIPS' };
-    } catch { return { id: DEFAULT_CONFERENCE, name: 'NeurIPS 2026' }; }
+      return { id: data.id || DEFAULT_CONFERENCE, name: data.name || 'Selected Conference' };
+    } catch { return { id: DEFAULT_CONFERENCE, name: 'Selected Conference' }; }
   }
-  return { id: DEFAULT_CONFERENCE, name: 'NeurIPS 2026' };
+  return { id: DEFAULT_CONFERENCE, name: 'Selected Conference' };
 }
 
 export default function UploadPage() {

@@ -16,7 +16,7 @@ export const HeroSection: React.FC = () => {
             Conference-Aware Research Paper<br className="hidden sm:inline" /> Submission Assistant
           </h1>
           <p className="text-lg md:text-xl text-indigo-100 mb-8 max-w-2xl">
-            Validate your paper against NeurIPS-style submission rules, detect compliance issues, and generate an Overleaf-ready package.
+            Validate your paper against conference submission rules, detect compliance issues, and generate an Overleaf-ready package.
           </p>
           <div className="flex flex-wrap gap-3">
             <button

@@ -1,0 +1,47 @@
+[
+  {
+    "id": "neurips-2025",
+    "abbr": "NeurIPS",
+    "name": "NeurIPS",
+    "start_date": "2025-12-01",
+    "submission_deadline": "2025-05-23",
+    "location": "Vancouver, Canada",
+    "flag": "🇨🇦",
+    "conference_type": "top_tier",
+    "topics": ["AI", "Machine Learning", "Neural Networks"],
+    "description": "Neural Information Processing Systems",
+    "url": "https://neurips.cc/",
+    "notification_date": "2025-09-25",
+    "acceptance_rate": 0.25
+  },
+  {
+    "id": "icml-2025",
+    "abbr": "ICML",
+    "name": "ICML",
+    "start_date": "2025-07-15",
+    "submission_deadline": "2025-01-31",
+    "location": "Denver, USA",
+    "flag": "🇺🇸",
+    "conference_type": "top_tier",
+    "topics": ["AI", "Machine Learning", "Statistics"],
+    "description": "International Conference on Machine Learning",
+    "url": "https://icml.cc/",
+    "notification_date": "2025-04-25",
+    "acceptance_rate": 0.26
+  },
+  {
+    "id": "iccv-2025",
+    "abbr": "ICCV",
+    "name": "ICCV",
+    "start_date": "2025-10-19",
+    "submission_deadline": "2025-03-14",
+    "location": "Seoul, South Korea",
+    "flag": "🇰🇷",
+    "conference_type": "top_tier",
+    "topics": ["Computer Vision", "AI", "Image Processing"],
+    "description": "International Conference on Computer Vision",
+    "url": "https://iccv2025.thecvf.com/",
+    "notification_date": "2025-07-10",
+    "acceptance_rate": 0.25
+  }
+]

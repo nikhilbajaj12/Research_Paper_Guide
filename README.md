@@ -93,10 +93,10 @@ cp paperguide-ai/backend/.env.example paperguide-ai/backend/.env
 cp frontend/.env.example frontend/.env
 
 # Build and run
-podman-compose up --build
+podman-compose up --build -d
 
 # Or with podman compose plugin
-podman compose up --build
+podman compose up --build -d
 ```
 
 ## End-to-End Demo Flow

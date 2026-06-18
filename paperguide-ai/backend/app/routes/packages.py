@@ -22,6 +22,27 @@ router = APIRouter(prefix="/api/v1/packages", tags=["packages"])
 package_service = PackageService()
 
 
+def resolve_conference_config(conference_id: str):
+    """Resolve conference config with fallback for IDs like 'neurips-2025' -> 'neurips'."""
+    config = config_loader.load(conference_id)
+    resolved_id = conference_id
+
+    if config is None and "-" in conference_id:
+        base_id = conference_id.split("-", 1)[0]
+        config = config_loader.load(base_id)
+        if config is not None:
+            resolved_id = base_id
+
+    return config, resolved_id
+
+
+def normalize_conference_id(conference_id: str) -> str:
+    """Normalize conference IDs for cross-route compatibility."""
+    if not conference_id:
+        return conference_id
+    return conference_id.split("-", 1)[0] if "-" in conference_id else conference_id
+
+
 @router.post("/generate", response_model=PackageGenerationResponse)
 async def generate_package(
     request: PackageGenerationRequest,
@@ -60,7 +81,7 @@ async def generate_package(
             await parsed_doc_cache.set(paper_id, parsed_paper, db)
             logger.info(f"Cache REFRESH: paper={paper_id} (package generation)")
 
-        config = config_loader.load(request.conference_id)
+        config, resolved_conference_id = resolve_conference_config(request.conference_id)
         if config is None:
             logger.warning(f"Conference config not found: {request.conference_id} — using defaults")
         conference_config_dict = config.to_guidelines_dict() if config else {}
@@ -71,7 +92,9 @@ async def generate_package(
                 status_code=409,
                 detail="Run compliance analysis before generating a package"
             )
-        if compliance_report.get("conference_id") != request.conference_id:
+        report_conf_id = normalize_conference_id(compliance_report.get("conference_id", ""))
+        request_conf_id = normalize_conference_id(request.conference_id)
+        if report_conf_id != request_conf_id:
             raise HTTPException(
                 status_code=409,
                 detail="Run compliance analysis for the selected conference before generating a package"
@@ -79,7 +102,7 @@ async def generate_package(
         
         package_id, package_metadata = package_service.generate_package(
             paper_id=paper_id,
-            conference_id=request.conference_id,
+            conference_id=resolved_conference_id,
             parsed_paper=parsed_paper,
             compliance_report=compliance_report,
             conference_config=conference_config_dict,
@@ -91,7 +114,7 @@ async def generate_package(
             package_id=package_id,
             project_id=request.project_id,
             paper_id=paper_id,
-            conference_id=request.conference_id,
+            conference_id=resolved_conference_id,
             package_type=request.package_type,
             zip_file_path=package_metadata.get('zip_file_path'),
             generated_files=package_metadata.get('generated_files', []),

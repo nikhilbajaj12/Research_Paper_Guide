@@ -13,15 +13,15 @@ import { ROUTES } from '@/constants/routes';
 import { Package } from '@/types/package';
 
 function getConferenceData(): { id: string; name: string; year?: number } {
-  if (typeof window === 'undefined') return { id: 'neurips-2025', name: 'NeurIPS' };
+  if (typeof window === 'undefined') return { id: 'neurips-2025', name: 'Selected Conference' };
   const stored = localStorage.getItem('selectedConference');
   if (stored) {
     try {
       const data = JSON.parse(stored);
-      return { id: data.id || 'neurips-2025', name: data.name || 'NeurIPS', year: data.start_date ? parseInt(data.start_date.slice(0, 4)) : 2026 };
-    } catch { return { id: 'neurips-2025', name: 'NeurIPS' }; }
+      return { id: data.id || 'neurips-2025', name: data.name || 'Selected Conference', year: data.start_date ? parseInt(data.start_date.slice(0, 4)) : 2026 };
+    } catch { return { id: 'neurips-2025', name: 'Selected Conference' }; }
   }
-  return { id: 'neurips-2025', name: 'NeurIPS' };
+  return { id: 'neurips-2025', name: 'Selected Conference' };
 }
 
 export default function PackagesPage() {

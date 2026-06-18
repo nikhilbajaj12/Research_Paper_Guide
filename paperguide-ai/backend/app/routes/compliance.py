@@ -6,7 +6,7 @@ import uuid
 from typing import List
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
-from fastapi import Depends
+from fastapi import Depends, status
 from ..database import get_db
 from ..schemas import ComplianceAnalyzeRequest, ComplianceReportResponse, FixSuggestion, ValidationResult, RecommendationDetail
 from ..scoring import ScoringEngine
@@ -15,6 +15,7 @@ from ..services.parser_service import ParserService
 from ..cache.parsed_document_cache import ParsedDocumentCache
 from ..conference import config_loader
 from ..validators import BlindReviewValidator, StructureValidator, ResearchIntegrityValidator
+from ..models import Paper as PaperModel
 from ..core import get_logger
 
 logger = get_logger(__name__)
@@ -22,6 +23,20 @@ router = APIRouter(prefix="/api/v1/compliance", tags=["compliance"])
 
 PAPER_STORAGE = {}
 COMPLIANCE_REPORT_STORAGE = {}
+
+
+def resolve_conference_config(conference_id: str):
+    """Resolve conference config with fallback for IDs like 'neurips-2025' -> 'neurips'."""
+    config = config_loader.load(conference_id)
+    resolved_id = conference_id
+
+    if config is None and "-" in conference_id:
+        base_id = conference_id.split("-", 1)[0]
+        config = config_loader.load(base_id)
+        if config is not None:
+            resolved_id = base_id
+
+    return config, resolved_id
 
 
 def calculate_readiness_score(issues: list) -> int:
@@ -104,6 +119,13 @@ def generate_fix_suggestions(issues: list) -> list:
     return suggestions
 
 
+def _rec_value(rec, key: str, default=None):
+    """Read recommendation fields from either dataclass/object or dict."""
+    if isinstance(rec, dict):
+        return rec.get(key, default)
+    return getattr(rec, key, default)
+
+
 @router.post("/analyze", response_model=ComplianceReportResponse)
 async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = Depends(get_db)):
     """Analyze paper compliance with conference guidelines."""
@@ -111,17 +133,23 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
     
     try:
         paper_id = request.paper_id
-        if paper_id not in PAPER_STORAGE:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Paper not found: {paper_id}"
-            )
-        
-        paper_info = PAPER_STORAGE[paper_id]
-        storage_path = paper_info["storage_path"]
-        file_type = paper_info["file_type"]
+        storage_path = None
+        file_type = None
+
+        # Try in-memory first, fallback to DB
+        if paper_id in PAPER_STORAGE:
+            storage_path = PAPER_STORAGE[paper_id]["storage_path"]
+            file_type = PAPER_STORAGE[paper_id]["file_type"]
+        else:
+            paper_db = db.query(PaperModel).filter(PaperModel.id == paper_id).first()
+            if paper_db and paper_db.file_path:
+                storage_path = paper_db.file_path
+                file_type = os.path.splitext(storage_path)[1].lstrip('.')
+            else:
+                raise HTTPException(status_code=404, detail="Paper metadata not found in storage or database")
         
         if not os.path.exists(storage_path):
+            logger.error(f"File missing at path: {storage_path}")
             raise HTTPException(
                 status_code=404,
                 detail="Paper file not found"
@@ -134,11 +162,13 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
         else:
             logger.info(f"Cache MISS: paper={paper_id} — parsing and repopulating (compliance analysis)")
             parser_service = ParserService()
-            parsed_paper = parser_service.parse(storage_path, file_type, paper_id)
-            await parsed_doc_cache.set(paper_id, parsed_paper, db)
+            parsed_doc = parser_service.parse(storage_path, file_type, paper_id)
+            await parsed_doc_cache.set(paper_id, parsed_doc, db)
+            # Ensure we are working with a dictionary for engine compatibility
+            parsed_paper = parsed_doc.model_dump() if hasattr(parsed_doc, "model_dump") else parsed_doc
             logger.info(f"Cache REFRESH: paper={paper_id} (compliance analysis)")
 
-        config = config_loader.load(request.conference_id)
+        config, resolved_conference_id = resolve_conference_config(request.conference_id)
         if config is None:
             raise HTTPException(
                 status_code=404,
@@ -203,7 +233,7 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
         response = ComplianceReportResponse(
             project_id=request.paper_id,
             paper_id=paper_id,
-            conference_id=request.conference_id,
+            conference_id=resolved_conference_id,
             overall_status=overall_status,
             readiness_score=readiness_score,
             issues=issues,
@@ -212,13 +242,13 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
             critical_count=score_result.critical_count,
             recommendations=[
                 RecommendationDetail(
-                    issue=rec.issue or rec.suggested_action,
-                    location=rec.location or rec.category,
-                    severity=rec.severity or "warning",
-                    suggested_action=rec.suggested_action,
-                    explanation=rec.explanation,
-                    category=rec.category,
-                    can_auto_fix=rec.can_auto_fix,
+                    issue=_rec_value(rec, 'issue') or _rec_value(rec, 'suggested_action', 'Unknown Issue'),
+                    location=_rec_value(rec, 'location') or _rec_value(rec, 'category', 'General'),
+                    severity=_rec_value(rec, 'severity', 'warning'),
+                    suggested_action=_rec_value(rec, 'suggested_action', ''),
+                    explanation=_rec_value(rec, 'explanation', ''),
+                    category=_rec_value(rec, 'category', 'general'),
+                    can_auto_fix=_rec_value(rec, 'can_auto_fix', False),
                 )
                 for rec in recommendations
             ],

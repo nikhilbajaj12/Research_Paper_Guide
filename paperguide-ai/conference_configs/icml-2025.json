@@ -1,0 +1,34 @@
+{
+  "conference_name": "ICML",
+  "conference_year": 2025,
+  "max_pages": 8,
+  "min_pages": 1,
+  "blind_review": true,
+  "reference_style": "bibtex",
+  "required_sections": ["abstract", "introduction", "method", "experiments", "conclusion"],
+  "optional_sections": ["appendix", "supplementary_materials"],
+  "required_keywords": [],
+  "margin_rules": {
+    "top_cm": 2.54,
+    "bottom_cm": 2.54,
+    "left_cm": 2.54,
+    "right_cm": 2.54
+  },
+  "package_template": "icml2025.sty",
+  "scoring_weights": {
+    "critical": 20,
+    "warning": 8,
+    "info": 2
+  },
+  "anonymity_rules": {
+    "requires_anonymous_submission": true,
+    "allow_supplementary_material": true,
+    "allow_arxiv_submission": true
+  },
+  "submission_requirements": {
+    "min_references": 10,
+    "max_figures": 8,
+    "max_tables": 5,
+    "requires_ethical_statement": true
+  }
+}

@@ -77,7 +77,7 @@ export const Sidebar: React.FC = () => {
           <span className="text-xs text-slate-300">Backend Connected</span>
         </div>
         <div className="flex items-center gap-3 px-3 py-2 mt-2 rounded-lg bg-indigo-900">
-          <span className="text-xs text-indigo-200">NeurIPS Enabled</span>
+          <span className="text-xs text-indigo-200">Conference Analysis Enabled</span>
         </div>
       </div>
     </aside>

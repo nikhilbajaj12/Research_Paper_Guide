@@ -23,6 +23,7 @@ import { ROUTES } from '@/constants/routes';
 import { isValidFileType, isValidFileSize } from '@/utils/validators';
 import { formatFileSize } from '@/utils/formatters';
 import { Conference, ConferenceBrief } from '@/types/conference';
+import { ConferenceConfig } from '@/services/conferenceApi';
 import { ComplianceReport } from '@/types/compliance';
 import { Package } from '@/types/package';
 
@@ -33,7 +34,6 @@ export default function HomePage() {
   const [selectedConference, setSelectedConference] = useState<Conference | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingDetails, setLoadingDetails] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [report, setReport] = useState<ComplianceReport | null>(null);
@@ -44,7 +44,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const configList = await conferenceApi.getConfigList();
+        const configList: ConferenceConfig[] = await conferenceApi.getConfigList();
 
         const conferenceList: ConferenceBrief[] = configList.map(cfg => ({
           id: cfg.conference_id,
@@ -57,37 +57,16 @@ export default function HomePage() {
         setConferences(conferenceList);
 
         const cfgMap: Record<string, any> = {};
-        const details = await Promise.allSettled(
-          conferenceList.map(conf =>
-            conferenceApi.getConferenceById(conf.id).then(d => ({ id: conf.id, detail: d }))
-          )
-        );
-        for (const result of details) {
-          if (result.status === 'fulfilled') {
-            const { id, detail } = result.value;
-            cfgMap[id] = {
-              conference_name: detail.name,
-              conference_year: detail.start_date ? parseInt(detail.start_date.slice(0, 4)) : 2026,
-              max_pages: detail.max_pages || detail.guidelines?.max_pages || 9,
-              blind_review: detail.requires_anonymity ?? detail.guidelines?.requires_anonymity ?? true,
-              reference_style: detail.reference_format || detail.guidelines?.reference_format || 'bibtex',
-              required_sections: detail.guidelines?.required_sections || [],
-              package_template: id.split('-')[0] || 'neurips',
-            };
-          }
-        }
-        for (const conf of conferenceList) {
-          if (!cfgMap[conf.id]) {
-            cfgMap[conf.id] = {
-              conference_name: conf.name,
-              conference_year: parseInt(conf.start_date.slice(0, 4)),
-              max_pages: 9,
-              blind_review: true,
-              reference_style: 'bibtex',
-              required_sections: [],
-              package_template: conf.id,
-            };
-          }
+        for (const cfg of configList) {
+          cfgMap[cfg.conference_id] = {
+            conference_name: cfg.conference_name,
+            conference_year: cfg.conference_year,
+            max_pages: cfg.max_pages,
+            blind_review: cfg.blind_review,
+            reference_style: cfg.reference_style,
+            required_sections: cfg.required_sections,
+            package_template: cfg.package_template,
+          };
         }
         setConferenceConfigs(cfgMap);
       } catch (err: any) {
@@ -99,18 +78,23 @@ export default function HomePage() {
     fetchData();
   }, []);
 
-  const handleSelectConference = async (conf: ConferenceBrief) => {
-    setLoadingDetails(true);
-    setError(null);
-    try {
-      const detailed = await conferenceApi.getConferenceById(conf.id);
-      setSelectedConference(detailed);
-      localStorage.setItem('selectedConference', JSON.stringify(detailed));
-    } catch {
-      setSelectedConference({ ...conf, max_pages: 9, requires_anonymity: true, reference_format: 'bibtex' });
-    } finally {
-      setLoadingDetails(false);
-    }
+  const handleSelectConference = (conf: ConferenceBrief) => {
+    const cfg = conferenceConfigs[conf.id];
+    const detailed: Conference = {
+      ...conf,
+      max_pages: cfg?.max_pages ?? 9,
+      requires_anonymity: cfg?.blind_review ?? true,
+      reference_format: cfg?.reference_style ?? 'bibtex',
+      guidelines: cfg ? {
+        conference_id: conf.id,
+        max_pages: cfg.max_pages,
+        requires_anonymity: cfg.blind_review,
+        reference_format: cfg.reference_style,
+        required_sections: cfg.required_sections,
+      } : undefined,
+    };
+    setSelectedConference(detailed);
+    localStorage.setItem('selectedConference', JSON.stringify(detailed));
   };
 
   const handleFileSelect = (f: File) => {
@@ -209,13 +193,7 @@ export default function HomePage() {
         configMap={conferenceConfigs}
       />
 
-      {loadingDetails && (
-        <div className="flex justify-center py-4">
-          <Loader />
-        </div>
-      )}
-
-      {selectedConference && !loadingDetails && cfgData && (
+      {selectedConference && cfgData && (
         <Card>
           <div className="flex items-start justify-between">
             <div>
@@ -247,7 +225,7 @@ export default function HomePage() {
         </Card>
       )}
 
-      {selectedConference && !loadingDetails && (
+      {selectedConference && (
         <FileUploadBox
           onFileSelect={handleFileSelect}
           selectedFile={file ? { name: file.name, size: file.size } : null}

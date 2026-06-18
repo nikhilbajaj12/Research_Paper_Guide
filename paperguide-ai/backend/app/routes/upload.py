@@ -11,15 +11,10 @@ from ..utils.file_utils import (
     validate_file_extension, validate_file_size,
     get_file_extension, safe_filename, ensure_upload_directory, get_file_size
 )
-from ..services.parser_service import ParserService
-from ..cache.parsed_document_cache import ParsedDocumentCache
 from .compliance import PAPER_STORAGE
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1/papers", tags=["papers"])
-
-parser_service = ParserService()
-parsed_doc_cache = ParsedDocumentCache()
 
 
 @router.post("/upload", response_model=PaperUploadResponse)
@@ -52,7 +47,7 @@ async def upload_paper(
         ensure_upload_directory()
         paper_id = str(uuid.uuid4())
         ext = get_file_extension(file.filename)
-        storage_filename = f"{paper_id}.{ext}"
+        storage_filename = f"{paper_id}{ext}"
         storage_path = os.path.join(settings.LOCAL_STORAGE_PATH, storage_filename)
 
         with open(storage_path, 'wb') as f:
@@ -60,20 +55,17 @@ async def upload_paper(
 
         PAPER_STORAGE[paper_id] = {
             "file_name": file.filename,
-            "file_type": ext,
+            "file_type": ext.lstrip('.'),
             "storage_path": storage_path,
             "conference_id": conference_id,
         }
 
-        # Parse once immediately and cache the result (memory + db)
-        parsed = parser_service.parse(storage_path, ext, paper_id)
-        await parsed_doc_cache.set(paper_id, parsed, db)
-        logger.info(f"Cache store: paper={paper_id} (parsed once during upload)")
+        logger.info(f"Upload complete: paper_id={paper_id}, size={file_size}")
 
         return PaperUploadResponse(
             paper_id=paper_id,
             file_name=file.filename,
-            file_type=ext,
+            file_type=ext.lstrip('.'),
             file_size=file_size,
             storage_path=storage_path,
             upload_status="completed"
