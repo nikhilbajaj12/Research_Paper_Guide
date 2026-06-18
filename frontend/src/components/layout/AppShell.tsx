@@ -2,12 +2,22 @@
 
 import React from 'react';
 import { Sidebar } from './Sidebar';
+import { FloatingChat } from '@/components/chat/FloatingChat';
+import { useFloatingChat } from '@/hooks/useFloatingChat';
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
+  const {
+    messages,
+    loading: chatLoading,
+    error: chatError,
+    sendMessage,
+    clearMessages,
+  } = useFloatingChat();
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar />
@@ -37,6 +47,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           {children}
         </main>
       </div>
+
+      {/* Floating AI Chat Assistant - visible on all pages */}
+      <FloatingChat
+        messages={messages}
+        loading={chatLoading}
+        error={chatError}
+        onSendMessage={sendMessage}
+        onClearMessages={clearMessages}
+      />
     </div>
   );
 };

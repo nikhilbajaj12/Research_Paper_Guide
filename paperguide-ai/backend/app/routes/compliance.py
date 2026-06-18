@@ -10,6 +10,7 @@ from fastapi import Depends, status
 from ..database import get_db
 from ..schemas import ComplianceAnalyzeRequest, ComplianceReportResponse, FixSuggestion, ValidationResult, RecommendationDetail
 from ..scoring import ScoringEngine
+from ..utils.deduplication import deduplicate_recommendations
 from ..recommendation import RecommendationEngine
 from ..services.parser_service import ParserService
 from ..cache.parsed_document_cache import ParsedDocumentCache
@@ -227,6 +228,25 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
         rec_engine = RecommendationEngine()
         recommendations = rec_engine.generate(all_results, parsed_paper, guidelines_dict)
 
+        # Deduplicate recommendations before sending to frontend
+        rec_dicts = []
+        for rec in recommendations:
+            if isinstance(rec, dict):
+                rec_dicts.append(rec)
+            else:
+                rec_dicts.append({
+                    "issue_id": rec.issue_id,
+                    "category": rec.category,
+                    "can_auto_fix": rec.can_auto_fix,
+                    "suggested_action": rec.suggested_action,
+                    "issue": rec.issue,
+                    "location": rec.location,
+                    "severity": rec.severity,
+                    "replacement_text": rec.replacement_text,
+                    "explanation": rec.explanation,
+                })
+        deduped = deduplicate_recommendations(rec_dicts)
+
         readiness_score = score_result.score
         overall_status = score_result.status
 
@@ -250,7 +270,7 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
                     category=_rec_value(rec, 'category', 'general'),
                     can_auto_fix=_rec_value(rec, 'can_auto_fix', False),
                 )
-                for rec in recommendations
+                for rec in deduped
             ],
         )
 

@@ -12,6 +12,7 @@ from ..utils.file_utils import (
     get_file_extension, safe_filename, ensure_upload_directory, get_file_size
 )
 from .compliance import PAPER_STORAGE
+from ..models import Paper as PaperModel
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api/v1/papers", tags=["papers"])
@@ -53,12 +54,29 @@ async def upload_paper(
         with open(storage_path, 'wb') as f:
             f.write(contents)
 
+        # Store in-memory for immediate access
         PAPER_STORAGE[paper_id] = {
             "file_name": file.filename,
             "file_type": ext.lstrip('.'),
             "storage_path": storage_path,
             "conference_id": conference_id,
         }
+
+        # Also persist to database so metadata survives server restarts
+        try:
+            paper_db = PaperModel(
+                id=paper_id,
+                conference_id=conference_id,
+                original_filename=file.filename,
+                storage_path=storage_path,
+                status="uploaded",
+            )
+            db.add(paper_db)
+            db.commit()
+            logger.info(f"Paper persisted to DB: {paper_id}")
+        except Exception as db_err:
+            db.rollback()
+            logger.warning(f"DB persist failed (non-fatal, in-memory only): {db_err}")
 
         logger.info(f"Upload complete: paper_id={paper_id}, size={file_size}")
 

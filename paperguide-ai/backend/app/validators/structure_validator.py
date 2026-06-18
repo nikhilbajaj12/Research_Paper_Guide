@@ -5,7 +5,7 @@ from typing import List, Optional
 from ..schemas import ParsedDocument, ValidationResult
 from ..checkers.page_limit_checker import PageLimitChecker
 from ..core import get_logger
-from .base_validator import BaseValidator
+from .base_validator import BaseValidator 
 
 logger = get_logger(__name__)
 

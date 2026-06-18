@@ -360,6 +360,26 @@ class GeneratedFile(BaseModel):
     file_path: str
 
 
+# ============ AI Assistant Schemas ============
+
+class AssistantChatRequest(BaseModel):
+    """Request to chat with the AI Assistant."""
+
+    conference: Optional[Dict[str, Any]] = None
+    compliance_score: int = 0
+    critical_issues: List[Dict[str, Any]] = Field(default_factory=list)
+    warnings: List[Dict[str, Any]] = Field(default_factory=list)
+    passed_checks: List[str] = Field(default_factory=list)
+    recommendations: List[Dict[str, Any]] = Field(default_factory=list)
+    user_message: str = ""
+
+
+class AssistantChatResponse(BaseModel):
+    """Response from the AI Assistant."""
+
+    answer: str
+
+
 class PackageGenerationResponse(BaseModel):
     """Response from package generation."""
 

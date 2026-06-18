@@ -110,13 +110,15 @@ def create_app() -> FastAPI:
             "docs": "/api/docs",
         }
 
-    # Include routes (TODO: as each route module is created)
-    from .routes import conferences, papers, upload, compliance, packages
+    # Include routes
+    from .routes import conferences, papers, upload, compliance, packages, assistant, auto_fix
     app.include_router(conferences.router, tags=["conferences"])
     app.include_router(papers.router, tags=["papers"])
     app.include_router(upload.router, tags=["papers"])
     app.include_router(compliance.router, tags=["compliance"])
     app.include_router(packages.router, tags=["packages"])
+    app.include_router(assistant.router, tags=["assistant"])
+    app.include_router(auto_fix.router, tags=["auto-fix"])
     # from .routes import generation, projects
     # app.include_router(generation.router, prefix="/api/v1", tags=["generation"])
     # app.include_router(projects.router, prefix="/api/v1", tags=["projects"])

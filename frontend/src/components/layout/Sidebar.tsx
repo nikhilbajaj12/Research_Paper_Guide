@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: 'Reports', href: ROUTES.REPORT, icon: 'file' },
   { label: 'Packages', href: ROUTES.PACKAGES, icon: 'archive' },
   { label: 'Conferences', href: ROUTES.DASHBOARD, icon: 'calendar' },
+  { label: 'Assistant', href: '#', icon: 'chat', isChat: true },
 ];
 
 const icons: Record<string, React.ReactNode> = {
@@ -39,6 +40,11 @@ const icons: Record<string, React.ReactNode> = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
     </svg>
   ),
+  chat: (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+    </svg>
+  ),
 };
 
 export const Sidebar: React.FC = () => {
@@ -54,15 +60,33 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 px-3 py-4 space-y-1">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
+          const className = `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            isActive
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+          }`;
+
+          if (item.isChat) {
+            return (
+              <button
+                key="assistant"
+                onClick={() => {
+                  const btn = document.querySelector('[title="AI Assistant"]') as HTMLButtonElement;
+                  btn?.click();
+                }}
+                className={className + ' w-full text-left'}
+              >
+                {icons[item.icon]}
+                {item.label}
+              </button>
+            );
+          }
+
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
+              className={className}
             >
               {icons[item.icon]}
               {item.label}
