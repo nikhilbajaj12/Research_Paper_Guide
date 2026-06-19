@@ -19,6 +19,7 @@ from ..agents.structure_fix_agent import StructureFixAgent
 from ..agents.citation_fix_agent import CitationFixAgent
 from ..agents.reference_fix_agent import ReferenceFixAgent
 from ..agents.style_fix_agent import StyleFixAgent
+from .llm_fixer import LLMFixer
 
 logger = get_logger(__name__)
 
@@ -49,6 +50,7 @@ class FixPipeline:
         self.document_editor = DocumentEditor()
         self.mcp = MCPService()
         self.audit_log = AuditLog()
+        self.llm_fixer = LLMFixer()
 
     async def run(
         self,
@@ -76,6 +78,30 @@ class FixPipeline:
             plan.steps = [s for s in plan.steps if s.agent in optional_steps or s.agent == "validation_loop"]
 
         agent_results: List[AgentResult] = []
+
+        # Use LLM to fix issues first if they exist
+        issues_to_fix = [r for r in recommendations if r.get("severity") in ("critical", "warning")]
+        if issues_to_fix and settings.OPENAI_API_KEY:
+            logger.info(f"Using LLM to fix {len(issues_to_fix)} critical/warning issues")
+            self.audit_log.log_step("llm_fixer", "llm_fixer", "Apply LLM-based fixes", "running")
+            try:
+                fixed_paper = await self.llm_fixer.fix_document(
+                    parsed_paper=parsed_paper,
+                    issues=issues_to_fix,
+                    guidelines=guidelines,
+                    command=command,
+                )
+                parsed_paper = fixed_paper
+                self.audit_log.log_step("llm_fixer", "llm_fixer", "Apply LLM-based fixes", "completed")
+                agent_results.append(AgentResult(
+                    agent="llm_fixer",
+                    success=True,
+                    changes_made=[f"Applied LLM fixes for {len(issues_to_fix)} issues"],
+                ))
+            except Exception as e:
+                logger.error(f"LLM fixer failed: {e}")
+                self.audit_log.log_error("llm_fixer", str(e))
+                self.audit_log.log_step("llm_fixer", "llm_fixer", "Apply LLM-based fixes", "failed", str(e))
 
         for step in plan.steps:
             self.audit_log.log_step(step.step_id, step.agent, step.action, "running")

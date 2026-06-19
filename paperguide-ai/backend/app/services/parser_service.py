@@ -20,7 +20,7 @@ class ParserService:
         self.docx_parser = DOCXParser()
         self.latex_parser = LatexZipParser()
 
-    def parse(self, file_path: str, file_type: str, paper_id: str) -> ParsedDocument:
+    def parse(self, file_path: str, file_type: str, paper_id: str = "") -> ParsedDocument:
         """Parse file based on type and return a ParsedDocument."""
         logger.info(f"Parsing file: {file_path}, type: {file_type}")
 

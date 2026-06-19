@@ -27,7 +27,7 @@ class ParsedDocumentCache:
             logger.debug(f"Cache HIT (memory) for paper: {paper_id}")
             return self._memory_cache[paper_id]
 
-        if db is not None:
+        if db is not None and hasattr(db, 'query'):
             record = db.query(PaperAnalysis).filter(
                 PaperAnalysis.paper_id == paper_id
             ).first()
@@ -55,7 +55,12 @@ class ParsedDocumentCache:
             return
 
         try:
-            doc_json = json.dumps(doc.to_dict(), default=str)
+            if hasattr(doc, 'to_dict'):
+                doc_json = json.dumps(doc.to_dict(), default=str)
+            elif hasattr(doc, 'model_dump'):
+                doc_json = json.dumps(doc.model_dump(), default=str)
+            else:
+                doc_json = json.dumps(doc, default=str)
             existing = db.query(PaperAnalysis).filter(
                 PaperAnalysis.paper_id == paper_id
             ).first()
@@ -72,7 +77,8 @@ class ParsedDocumentCache:
             db.commit()
             logger.info(f"Parsed document cached (memory+db) for paper: {paper_id}")
         except Exception as e:
-            db.rollback()
+            if hasattr(db, 'rollback'):
+                db.rollback()
             logger.error(f"Failed to cache parsed document for {paper_id}: {e}")
 
     async def delete(self, paper_id: str, db: Optional[Session] = None) -> None:

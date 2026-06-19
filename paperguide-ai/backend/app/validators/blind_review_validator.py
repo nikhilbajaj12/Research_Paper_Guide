@@ -20,6 +20,7 @@ class BlindReviewValidator(BaseValidator):
         logger.info("Validating blind review (anonymity)")
         results = []
 
+        parsed_doc = self._to_parsed_document(parsed_doc)
         if not guidelines.get("requires_anonymity", False):
             return results
 

@@ -85,6 +85,7 @@ class LatexZipParser:
                     "numeric_claims": numeric_claims,
                     "source_type": "latex",
                     "source_files": source_files,
+                    "tex_files": tex_file_names,
                     "authors": [],
                     "bib_files": bib_file_names,
                     "sty_files": sty_file_names,

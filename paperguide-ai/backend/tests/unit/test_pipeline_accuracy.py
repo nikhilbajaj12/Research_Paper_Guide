@@ -25,6 +25,12 @@ class GuidelinesStub:
             "requires_anonymity": self.requires_anonymity,
         }
 
+    def to_guidelines_dict(self):
+        return {
+            "max_pages": self.max_pages,
+            "requires_anonymity": self.requires_anonymity,
+        }
+
 
 @pytest.mark.asyncio
 async def test_compliance_uses_selected_guidelines_and_retains_actual_report(tmp_path, monkeypatch):
@@ -37,15 +43,15 @@ async def test_compliance_uses_selected_guidelines_and_retains_actual_report(tmp
         "conference_id": "selected-conference",
     }
 
-    async def get_guidelines(_service, conference_id):
+    def load_config(conference_id):
         assert conference_id == "selected-conference"
         return GuidelinesStub(max_pages=1, requires_anonymity=False)
 
-    monkeypatch.setattr(compliance.ConferenceService, "get_guidelines", get_guidelines)
+    monkeypatch.setattr(compliance.config_loader, "load", load_config)
     monkeypatch.setattr(
         compliance.ParserService,
         "parse",
-        lambda _service, _path, _type: {
+        lambda _service, _path, _type, paper_id="": {
             "page_count": 2,
             "extracted_text": "",
             "references_found": True,
@@ -86,7 +92,7 @@ async def test_package_generation_uses_retained_compliance_report(tmp_path, monk
         "conference_id": "selected-conference",
     }
     compliance.COMPLIANCE_REPORT_STORAGE[paper_id] = report
-    monkeypatch.setattr(packages.ParserService, "parse", lambda _service, _path, _type: {})
+    monkeypatch.setattr(packages.ParserService, "parse", lambda _service, _path, _type, paper_id="": {})
 
     captured = {}
 

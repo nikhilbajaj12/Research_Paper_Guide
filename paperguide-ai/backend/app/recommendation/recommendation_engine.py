@@ -20,8 +20,21 @@ class RecommendationEngine:
         parsed_doc: ParsedDocument,
         guidelines: Dict[str, Any],
     ) -> List[Recommendation]:
-        """Generate recommendations from validation results."""
+        """Generate recommendations from validation results.
+
+        Only the first recommendation per category is kept to avoid
+        duplicate / near-duplicate suggestions for the same issue class.
+        """
+        # Normalize: accept both ParsedDocument and plain dict
+        if isinstance(parsed_doc, dict):
+            valid_fields = ParsedDocument.__dataclass_fields__.keys()
+            filtered = {k: v for k, v in parsed_doc.items() if k in valid_fields}
+            filtered.setdefault("paper_id", "")
+            filtered.setdefault("file_type", "")
+            parsed_doc = ParsedDocument(**filtered)
+
         recommendations: List[Recommendation] = []
+        seen_categories: set = set()
 
         category_handlers = {
             "anonymity": self._handle_anonymity,
@@ -35,9 +48,13 @@ class RecommendationEngine:
         }
 
         for result in results:
+            # Skip if we already have a recommendation for this category.
+            if result.category in seen_categories:
+                continue
             handler = category_handlers.get(result.category, self._handle_default)
             rec = handler(result, parsed_doc, guidelines)
             if rec is not None:
+                seen_categories.add(result.category)
                 recommendations.append(rec)
 
         return recommendations

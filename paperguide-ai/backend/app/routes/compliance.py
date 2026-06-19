@@ -10,7 +10,7 @@ from fastapi import Depends, status
 from ..database import get_db
 from ..schemas import ComplianceAnalyzeRequest, ComplianceReportResponse, FixSuggestion, ValidationResult, RecommendationDetail
 from ..scoring import ScoringEngine
-from ..utils.deduplication import deduplicate_recommendations
+from ..utils.deduplication import deduplicate_recommendations, deduplicate_validation_results
 from ..recommendation import RecommendationEngine
 from ..services.parser_service import ParserService
 from ..cache.parsed_document_cache import ParsedDocumentCache
@@ -192,6 +192,9 @@ async def analyze_compliance(request: ComplianceAnalyzeRequest, db: Session = De
         all_results.extend(blind_result)
         all_results.extend(structure_result)
         all_results.extend(integrity_result)
+
+        # Deduplicate validation results before converting to issue dicts
+        all_results = deduplicate_validation_results(all_results)
 
         # Convert ValidationResult to the dict format expected by the API
         issues = [r.to_issue_dict() for r in all_results]

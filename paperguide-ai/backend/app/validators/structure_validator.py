@@ -21,6 +21,7 @@ class StructureValidator(BaseValidator):
         logger.info("Validating paper structure (page limit, sections, template, margins)")
         results = []
 
+        parsed_doc = self._to_parsed_document(parsed_doc)
         parsed_dict = parsed_doc.to_dict()
 
         # --- Page limit (delegate to legacy checker) ---

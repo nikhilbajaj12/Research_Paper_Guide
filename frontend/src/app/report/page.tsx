@@ -44,6 +44,7 @@ export default function ReportPage() {
     sendMessage,
     clearMessages,
     setReport: setChatReport,
+    lastFixResponse,
   } = useAiChat();
 
   const {

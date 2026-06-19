@@ -55,10 +55,16 @@ export interface AssistantChatRequest {
   passed_checks: string[];
   recommendations: RecommendationDetail[];
   user_message: string;
+  paper_id?: string;
+  conference_id?: string;
 }
 
 export interface AssistantChatResponse {
   answer: string;
+  fix_run?: boolean;
+  pipeline_id?: string;
+  download_url?: string;
+  fix_summary?: string;
 }
 
 export interface FixStep {

@@ -1,31 +1,70 @@
 """Recommendation deduplication utility."""
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..schemas import ValidationResult
+
+
+def deduplicate_validation_results(
+    results: List["ValidationResult"],
+) -> List["ValidationResult"]:
+    """Remove duplicate validation results.
+
+    Deduplicates by (category, issue) key — catches exact and
+    near-duplicate validation issues.
+
+    Args:
+        results: List of ValidationResult objects.
+
+    Returns:
+        Deduplicated list preserving first occurrence order.
+    """
+    seen_content: set = set()
+    deduped: list = []
+
+    for result in results:
+        category = (result.category or "").strip().lower()
+        issue = (result.issue or "").strip().lower()
+
+        key = (category, issue)
+        if key not in seen_content:
+            seen_content.add(key)
+            deduped.append(result)
+
+    return deduped
 
 
 def deduplicate_recommendations(
     recommendations: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Remove duplicate recommendations based on issue_id, category, and message.
+    """Remove duplicate recommendations.
+
+    Deduplicates by (category, content) key — catches exact and
+    near-duplicate suggestions that differ only in casing / whitespace.
+    Different issues within the same category are preserved.
 
     Args:
-        recommendations: List of recommendation dicts with fields including
-                        issue_id, category, and message/issue.
+        recommendations: List of recommendation dicts.
 
     Returns:
         Deduplicated list preserving first occurrence order.
     """
-    seen = set()
-    deduped = []
+    seen_content: set = set()
+    deduped: list = []
 
     for rec in recommendations:
-        issue_id = _rec_value(rec, "issue_id", "")
-        category = _rec_value(rec, "category", "")
-        message = _rec_value(rec, "message") or _rec_value(rec, "issue", "")
+        category = (_rec_value(rec, "category", "") or "").strip().lower()
+        content = (
+            _rec_value(rec, "suggested_action")
+            or _rec_value(rec, "issue")
+            or _rec_value(rec, "message")
+            or ""
+        ).strip().lower()
 
-        key = (issue_id, category, message)
-        if key not in seen:
-            seen.add(key)
+        key = (category, content)
+        if key not in seen_content:
+            seen_content.add(key)
             deduped.append(rec)
 
     return deduped

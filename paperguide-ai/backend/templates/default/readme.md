@@ -1,4 +1,4 @@
-# Overleaf LaTeX Package - {{conference_name}}
+# README: Overleaf LaTeX Package - {{conference_name}}
 
 ## Setup
 

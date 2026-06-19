@@ -99,6 +99,19 @@ export const FloatingChat: React.FC<FloatingChatProps> = ({
                   <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed m-0">
                     {msg.content}
                   </pre>
+                  {/* Render a download button if the assistant message includes a download URL */}
+                  {msg.role === 'assistant' && msg.content.includes('Download Overleaf package') && (
+                    <div className="mt-2">
+                      <a
+                        href={msg.content.match(/\((https?:\/\/[^)]+)\)/)?.[1] || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors"
+                      >
+                        Download Overleaf Package
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

@@ -34,6 +34,8 @@ export function useFloatingChat() {
         if (stored) reportContext = JSON.parse(stored);
       } catch {}
 
+      // Build the request payload, ensuring we forward the paper and conference identifiers.
+      // The compliance report stored in localStorage contains these IDs under ``paper_id`` and ``conference_id``.
       const request: AssistantChatRequest = {
         conference: reportContext ? { id: reportContext.conference_id } : { id: 'neurips-2025' },
         compliance_score: reportContext?.readiness_score ?? 0,
@@ -42,10 +44,20 @@ export function useFloatingChat() {
         passed_checks: reportContext?.passed_checks ?? [],
         recommendations: reportContext?.recommendations ?? [],
         user_message: userMessage,
+        // Forward identifiers so the backend can trigger the auto‑fix pipeline.
+        paper_id: reportContext?.paper_id,
+        conference_id: reportContext?.conference_id,
       };
 
       const response = await assistantApi.chat(request);
-      const assistantMsg = createMessage('assistant', response.answer);
+      // If the backend provides a download URL for the generated Overleaf package,
+      // embed it in the assistant's reply so the UI can render a clickable link.
+      let content = response.answer;
+      if (response.download_url) {
+        // Append a markdown‑style link on a new line.
+        content += `\n\n[Download Overleaf package](${response.download_url})`;
+      }
+      const assistantMsg = createMessage('assistant', content);
       setMessages(prev => [...prev, assistantMsg]);
     } catch (err: any) {
       setError(err.message || 'Failed to get response from assistant');

@@ -39,8 +39,9 @@ def test_parser_service_routes_existing_upload_file_types(file_type, parser_attr
     result = service.parse("paper-path", file_type)
 
     selected_parser = getattr(service, parser_attribute)
-    assert result["parser"] is selected_parser
     assert selected_parser.file_path == "paper-path"
+    # Verify the result is a ParsedDocument with expected fields
+    assert result.file_type == file_type.lower().lstrip('.')
 
 
 def test_conference_loader_uses_canonical_conference_type_and_repairs_existing_row(tmp_path):

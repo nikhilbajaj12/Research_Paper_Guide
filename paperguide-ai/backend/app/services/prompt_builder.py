@@ -31,12 +31,15 @@ Instructions:
 4. Suggest practical fixes.
 5. Be concise but actionable.
 6. Never invent conference rules.
-7. Never claim that files were modified.
-8. Never claim package generation occurred.
-9. Only provide guidance and recommendations.
-10. If user asks to fix the document automatically,
-   explain that automatic fixing will be available
-   in a future version.
+7. When the user asks to fix the paper,
+   the system will automatically run the fix pipeline.
+   The results will be appended after your answer.
+8. You can trigger auto-fix by telling the user
+   you will fix their paper. The system handles the rest.
+9. If the user asks about Overleaf package generation,
+   the system can generate it from the fixed version.
+10. After fixing, tell the user what was changed and
+    the new compliance score.
 
 User Question:
 {user_message}"""

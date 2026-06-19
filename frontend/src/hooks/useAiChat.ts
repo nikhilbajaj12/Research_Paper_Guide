@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { AssistantMessage, ComplianceReport, AssistantChatRequest } from '@/types/compliance';
+import { AssistantMessage, ComplianceReport, AssistantChatRequest, AssistantChatResponse } from '@/types/compliance';
 import { assistantApi } from '@/services/assistantApi';
 
 let messageCounter = 0;
@@ -19,6 +19,7 @@ export function useAiChat() {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastFixResponse, setLastFixResponse] = useState<AssistantChatResponse | null>(null);
   const reportRef = useRef<ComplianceReport | null>(null);
 
   const setReport = useCallback((report: ComplianceReport) => {
@@ -43,11 +44,17 @@ export function useAiChat() {
         passed_checks: report.passed_checks,
         recommendations: report.recommendations || [],
         user_message: userMessage,
+        paper_id: report.paper_id,
+        conference_id: report.conference_id,
       };
 
       const response = await assistantApi.chat(request);
       const assistantMsg = createMessage('assistant', response.answer);
       setMessages(prev => [...prev, assistantMsg]);
+
+      if (response.fix_run) {
+        setLastFixResponse(response);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to get response from assistant');
     } finally {
@@ -58,6 +65,7 @@ export function useAiChat() {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
+    setLastFixResponse(null);
   }, []);
 
   return {
@@ -67,5 +75,6 @@ export function useAiChat() {
     sendMessage,
     clearMessages,
     setReport,
+    lastFixResponse,
   };
 }

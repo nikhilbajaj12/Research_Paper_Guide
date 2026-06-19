@@ -372,12 +372,18 @@ class AssistantChatRequest(BaseModel):
     passed_checks: List[str] = Field(default_factory=list)
     recommendations: List[Dict[str, Any]] = Field(default_factory=list)
     user_message: str = ""
+    paper_id: Optional[str] = None
+    conference_id: Optional[str] = None
 
 
 class AssistantChatResponse(BaseModel):
     """Response from the AI Assistant."""
 
     answer: str
+    fix_run: bool = False
+    pipeline_id: Optional[str] = None
+    download_url: Optional[str] = None
+    fix_summary: Optional[str] = None
 
 
 class PackageGenerationResponse(BaseModel):

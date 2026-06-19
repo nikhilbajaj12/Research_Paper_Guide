@@ -16,12 +16,13 @@ async def chat_with_assistant(request: AssistantChatRequest):
     """Chat with the AI Submission Assistant.
 
     The assistant provides guidance based on compliance results.
-    It does NOT modify files, re-run validators, or trigger package generation.
+    When the user asks to fix the paper, it triggers the auto-fix pipeline.
     """
     logger.info(
         f"Assistant chat request received: score={request.compliance_score}, "
         f"critical_issues={len(request.critical_issues)}, "
-        f"recommendations={len(request.recommendations)}"
+        f"recommendations={len(request.recommendations)}, "
+        f"paper_id={request.paper_id}"
     )
 
     try:
@@ -33,6 +34,8 @@ async def chat_with_assistant(request: AssistantChatRequest):
             passed_checks=request.passed_checks,
             recommendations=request.recommendations,
             user_message=request.user_message,
+            paper_id=request.paper_id,
+            conference_id=request.conference_id,
         )
         return AssistantChatResponse(**result)
     except Exception as e:

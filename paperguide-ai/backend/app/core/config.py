@@ -48,10 +48,10 @@ class Settings(BaseSettings):
     # CORS (for frontend)
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
 
-    # TODO: Add later
-    # OPENAI_API_KEY: str = ""  # For AI agents
-    # CELERY_BROKER_URL: str = ""  # For async tasks
-    # REDIS_URL: str = ""  # For caching
+    # AI / LLM
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+    OPENAI_BASE_URL: str = ""  # Optional: for Azure / proxies
 
     class Config:
         """Pydantic config."""

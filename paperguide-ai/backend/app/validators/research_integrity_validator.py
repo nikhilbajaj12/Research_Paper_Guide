@@ -24,6 +24,7 @@ class ResearchIntegrityValidator(BaseValidator):
         logger.info("Validating research integrity (references, citations, claims)")
         results = []
 
+        parsed_doc = self._to_parsed_document(parsed_doc)
         extracted_text = parsed_doc.extracted_text or ""
         parsed_dict = parsed_doc.to_dict()
 
